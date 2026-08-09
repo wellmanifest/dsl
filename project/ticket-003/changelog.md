@@ -21,3 +21,6 @@
 - Corrected branch-push boundary resolution to use the default-branch
   merge-base, preserving the approved `acceptedBaseSha` instead of treating the
   plan-only parent as the delivery base.
+- Passed the hosted Linux, networkless Docker, and Windows governance jobs in
+  Actions run `31318366817`; all deterministic acceptance criteria are now met
+  and only independent exact-head review remains.

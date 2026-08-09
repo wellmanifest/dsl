@@ -29,7 +29,7 @@ Actions is an additional protected evidence boundary, not the only entrypoint.
 - [x] AC-03: Linux validates JSON contracts, Python syntax, Ruff, the DSL
   self-test when present, governance for the exact base/head, and a networkless
   Docker run.
-- [ ] AC-04: Windows validates the managed PowerShell/Python governance
+- [x] AC-04: Windows validates the managed PowerShell/Python governance
   entrypoints for the exact pull-request base/head.
 - [x] AC-05: The pinned reusable governance workflow accepts only an independent
   current-head human or `ifuri-validator-agent[bot]` review.
