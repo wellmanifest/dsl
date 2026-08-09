@@ -48,6 +48,10 @@ so CI must be bootstrapped in a separate infrastructure ticket based on main.
   invalid: `origin/main` has necessarily advanced to the merge commit. The
   corrective design uses repository-health validation only for a push to the
   protected default branch; all pre-merge executions stay exact-range bound.
+- Because the minimal networkless image has no Git executable, repository
+  health uses the governance-only `project/TICKETS.md` anchor to express an
+  intentionally empty implementation set. This runs all repository-wide
+  policy checks without pretending the anchor is pre-merge diff evidence.
 
 ## Blockers
 

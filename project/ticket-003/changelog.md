@@ -28,3 +28,8 @@
   `31320893127` exposed `GOV-BASE-001`: an already-merged default-branch push
   must validate clean repository health, while all pre-merge events retain
   exact range validation.
+- Defined `project/TICKETS.md` as the governance-only health anchor for the
+  minimal networkless image, which intentionally has no Git executable.
+- Passed Python, Ruff, DSL self-test, governance, actionlint, mode assertions,
+  and both repository-health and exact-range networkless Docker validation for
+  the corrective workflow.

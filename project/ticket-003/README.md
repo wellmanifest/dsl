@@ -40,6 +40,12 @@ Actions is an additional protected evidence boundary, not the only entrypoint.
   `origin/main`; pull requests, reviews, and topic branches retain exact-range
   validation on Linux, Windows, and in the networkless container.
 
+Repository-health mode supplies `project/TICKETS.md` as a stable governance
+anchor. This makes the intentionally empty implementation change set explicit
+to the checker in the minimal image, which contains no Git executable, while
+still running lock, required-file, ticket, coordination, stack, and content
+checks. It is never used as an authoritative pre-merge change list.
+
 ## Participants
 
 - Human participant: unresolved; no user-* file was created by this script.
