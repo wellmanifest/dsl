@@ -2,7 +2,8 @@
 
 - [x] [`ticket-001`](project/ticket-001/README.md) — define the initial DSL
   standard, manifest contract, per-command/error/security documentation, and
-  deterministic change/publication gate. Amended scope: `PUBLICATION`.
+  deterministic change/publication gate; merged through PR #1 as
+  `a8b4e7ab8d68e36a4457e5c1fd267e707f0b6852`.
 - [x] [`ticket-003`](project/ticket-003/README.md) — bootstrapped the two
   required deterministic CI checks and pinned Validator hand-off, then fixed
   protected post-merge repository-health validation in PR #4; verified on
