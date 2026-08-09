@@ -64,6 +64,9 @@ No human identity is inferred. Interactive approval is required from
   command without adding runtime dependencies or implementation paths.
 - Added mutation tests for filename case, incomplete pages, missing/unevaluable
   producers, and unresolved/resolved security findings.
+- Incorporated the independently approved CI bootstrap from `main`, retained
+  the exact five implementation paths, and rebound delivery to merge-base
+  `9e6b3d77fec03ff50931a584c0509f4c99d34d42` before fresh validation.
 
 ## Interactive authorization
 

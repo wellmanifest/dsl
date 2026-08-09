@@ -40,3 +40,6 @@
 - Passed Draft 2020-12 samples, Ruff, mutation self-tests, all Mermaid renders,
   governance, Docker build, and networkless Docker validation; moved to
   `PUBLICATION` for the already authorized branch/PR update.
+- Incorporated the merged CI bootstrap, resolved only the shared roadmap,
+  rebound the delivery base to `9e6b3d77fec03ff50931a584c0509f4c99d34d42`,
+  and retained the approved five-file implementation boundary.

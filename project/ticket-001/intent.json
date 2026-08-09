@@ -32,7 +32,7 @@
   "conflictsWith": [],
   "integrationTicket": null,
   "delivery": {
-    "acceptedBaseSha": "d51a1c900e59963483d0bbfe050623092eb60fff",
+    "acceptedBaseSha": "9e6b3d77fec03ff50931a584c0509f4c99d34d42",
     "targetBranch": "main",
     "outcome": "A reusable DSL kernel with deterministic command/error/security documentation and a publication-blocking normalized findings gate.",
     "nonGoals": [

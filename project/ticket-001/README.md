@@ -117,3 +117,10 @@ On 2026-08-09 the user answered `kontynuuj`, explicitly approving the amended
 plan above. The amended implementation and validation are complete inside the
 existing five-file boundary. Any prior review must target the new exact HEAD
 again.
+
+After the approved CI bootstrap merged as PR #3, ticket-001 incorporated
+`main@9e6b3d77fec03ff50931a584c0509f4c99d34d42`. Conflict resolution changed only
+the shared roadmap, while the approved five-file implementation scope,
+architecture and acceptance criteria remained unchanged. The user's continued
+publication authorization permits revalidation; trusted merge approval must
+still target the resulting new PR HEAD.
