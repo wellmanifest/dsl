@@ -1,0 +1,12 @@
+services:
+  governance:
+    build:
+      context: .
+    working_dir: /workspace
+    command:
+      - python3
+      - .governance/governance_check.py
+      - --root
+      - .
+      - --actor
+      - agent

@@ -1,0 +1,101 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-001",
+  "summary": "Establish reusable DSL standards and conformance gate",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P1",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "project/ticket-001/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "spec/DSL_STANDARD.md",
+    "schemas/dsl-manifest.schema.json",
+    "src/dsl_check.py",
+    "docs/ARCHITECTURE.md",
+    "docs/LOGIC_FLOW.md"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md",
+    ".governance/**",
+    "AGENTS.md",
+    "project.sh",
+    "project.bat",
+    "Dockerfile",
+    "compose.yml"
+  ],
+  "stacks": ["docker"],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+    "targetBranch": "main",
+    "outcome": "A reusable DSL kernel standard and deterministic change gate that other repositories can adopt without importing domain implementations.",
+    "nonGoals": [
+      "Migrate existing DSL repositories in ticket-001",
+      "Define all domain profiles in the initial kernel",
+      "Publish or merge without independent current-head review"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 30,
+    "budgets": {
+      "maxImplementationFiles": 5,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Use one neutral manifest and standard with deterministic validation; domain DSLs remain versioned profiles owned by their source projects.",
+      "components": [
+        {
+          "name": "normative-contracts",
+          "paths": [
+            "spec/DSL_STANDARD.md",
+            "schemas/dsl-manifest.schema.json"
+          ]
+        },
+        {
+          "name": "conformance-and-guidance",
+          "paths": [
+            "src/dsl_check.py",
+            "docs/ARCHITECTURE.md",
+            "docs/LOGIC_FLOW.md"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [
+        "Introduce wellmanifest.dsl/manifest/v1 as a new pre-stable contract"
+      ],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Remove the five ticket-owned implementation files; governance bootstrap and ticket evidence remain preserved."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-02",
+        "commands": [
+          "python3 src/dsl_check.py self-test"
+        ],
+        "evidence": "project/ticket-001/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-06",
+        "commands": [
+          "docker run --rm --network none dsl-governance python3 .governance/governance_check.py --root . --manifest .governance/manifest.json --lock .governance/manifest.lock.json --stack-profiles .governance/stack-profiles.json --actor agent --changed-file spec/DSL_STANDARD.md --changed-file schemas/dsl-manifest.schema.json --changed-file src/dsl_check.py --changed-file docs/ARCHITECTURE.md --changed-file docs/LOGIC_FLOW.md"
+        ],
+        "evidence": "project/ticket-001/ai-codex-logs.txt"
+      }
+    ]
+  }
+}
