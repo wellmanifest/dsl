@@ -63,9 +63,11 @@ change.
 - Docker image build: PASS.
 - Networkless Docker governance check: PASS.
 
-## Pending decision
+## Publication decision
 
 The local implementation is complete and validated. On 2026-08-09 the user
-explicitly authorized continuation and publication. Repository bootstrap will
-establish the otherwise missing `main` base; implementation will be published
-only through the ticket branch and pull request.
+explicitly authorized continuation and publication. Commit
+`d51a1c900e59963483d0bbfe050623092eb60fff` established the previously missing
+`main` using bootstrap and governance files only. The five implementation
+files are bound to that base and are published only through this ticket branch
+and its pull request.

@@ -80,9 +80,10 @@ No human identity is inferred. Interactive approval is required from
 - Compose cannot allocate a new Docker network because the host address pools
   are exhausted. Validation uses the same built image with `--network none`;
   no test requires network access.
-- The implementation is complete and publication is authorized. The remote is
-  empty, so a non-implementation governance bootstrap must establish `main`
-  before the five implementation paths can be published through a PR.
+- No implementation blocker remains. The non-implementation bootstrap is
+  published on `main` at `d51a1c900e59963483d0bbfe050623092eb60fff`.
+  Merge remains blocked until independent trusted approval targets the current
+  pull-request HEAD.
 
 ## Acceptance evidence
 

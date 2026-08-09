@@ -32,7 +32,7 @@
   "conflictsWith": [],
   "integrationTicket": null,
   "delivery": {
-    "acceptedBaseSha": "4b825dc642cb6eb9a060e54bf8d69288fbee4904",
+    "acceptedBaseSha": "d51a1c900e59963483d0bbfe050623092eb60fff",
     "targetBranch": "main",
     "outcome": "A reusable DSL kernel standard and deterministic change gate that other repositories can adopt without importing domain implementations.",
     "nonGoals": [
