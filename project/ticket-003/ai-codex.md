@@ -52,9 +52,12 @@ so CI must be bootstrapped in a separate infrastructure ticket based on main.
   health uses the governance-only `project/TICKETS.md` anchor to express an
   intentionally empty implementation set. This runs all repository-wide
   policy checks without pretending the anchor is pre-merge diff evidence.
+- PR #4 passed both required checks, received independent Validator approval
+  for exact head `9e1c2545b61078145abee0e232e18e917423c0db`, and passed the reusable
+  governance gate. Its merge commit `b30d6ff73861526aad449b4aebb3cc24afa84b11`
+  then passed Linux, Windows, and governance on the protected `main` push.
 
 ## Blockers
 
-- None. `validator-agent` now has a dedicated `wellmanifest/dsl` profile and
-  GitHub App `checks:read`; independent approval is still required for the
-  corrective PR head.
+- None. The corrective implementation is merged and its post-merge regression
+  run passed; this ticket is complete.

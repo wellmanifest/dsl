@@ -2,7 +2,7 @@
 
 - **ID**: ticket-003
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
+- **Status**: DONE
 - **Workflow state**: PUBLICATION
 - **Created**: 2026-08-09
 
@@ -35,7 +35,7 @@ Actions is an additional protected evidence boundary, not the only entrypoint.
   current-head human or `ifuri-validator-agent[bot]` review.
 - [x] AC-06: Workflow lint, local governance, Docker, and a mutation asserting
   both required job names pass before publication.
-- [ ] AC-07: A protected default-branch push validates clean repository health
+- [x] AC-07: A protected default-branch push validates clean repository health
   instead of replaying the already-approved pre-merge range against a moved
   `origin/main`; pull requests, reviews, and topic branches retain exact-range
   validation on Linux, Windows, and in the networkless container.
