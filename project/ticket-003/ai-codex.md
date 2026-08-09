@@ -24,6 +24,9 @@ so CI must be bootstrapped in a separate infrastructure ticket based on main.
 4. Validate required-check name alignment, action pinning, workflow syntax,
    local governance, and networkless Docker behavior.
 5. Publish only through its own branch/PR; do not merge or self-approve.
+6. On the protected default-branch push, switch only the deterministic checks
+   to clean repository-health mode; retain exact range binding everywhere
+   before merge.
 
 ## Actual changes
 
@@ -41,8 +44,17 @@ so CI must be bootstrapped in a separate infrastructure ticket based on main.
   been combined and that Windows checkout converted managed files to CRLF. The
   replacement branch now has a plan-only parent commit and configures LF before
   checkout; no gate or digest verification was weakened.
+- PR #1 then proved that replaying exact-range governance after merge is
+  invalid: `origin/main` has necessarily advanced to the merge commit. The
+  corrective design uses repository-health validation only for a push to the
+  protected default branch; all pre-merge executions stay exact-range bound.
+- Because the minimal networkless image has no Git executable, repository
+  health uses the governance-only `project/TICKETS.md` anchor to express an
+  intentionally empty implementation set. This runs all repository-wide
+  policy checks without pretending the anchor is pre-merge diff evidence.
 
 ## Blockers
 
-- `validator-agent` still needs a separate allowlist/profile change for
-  `wellmanifest/dsl` after these hosted checks exist.
+- None. `validator-agent` now has a dedicated `wellmanifest/dsl` profile and
+  GitHub App `checks:read`; independent approval is still required for the
+  corrective PR head.

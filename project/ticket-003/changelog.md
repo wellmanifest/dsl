@@ -24,3 +24,12 @@
 - Passed the hosted Linux, networkless Docker, and Windows governance jobs in
   Actions run `31318366817`; all deterministic acceptance criteria are now met
   and only independent exact-head review remains.
+- Reopened the ticket after protected post-merge runs `31320441866` and
+  `31320893127` exposed `GOV-BASE-001`: an already-merged default-branch push
+  must validate clean repository health, while all pre-merge events retain
+  exact range validation.
+- Defined `project/TICKETS.md` as the governance-only health anchor for the
+  minimal networkless image, which intentionally has no Git executable.
+- Passed Python, Ruff, DSL self-test, governance, actionlint, mode assertions,
+  and both repository-health and exact-range networkless Docker validation for
+  the corrective workflow.

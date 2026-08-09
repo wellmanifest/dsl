@@ -57,23 +57,29 @@ jobs:
         run: |
           set -euo pipefail
           base="$EVENT_BASE_SHA"
-          if [[ "$EVENT_NAME" != pull_request &&
-                "$EVENT_NAME" != pull_request_review &&
-                "$REF_NAME" != "$DEFAULT_BRANCH" ]]; then
-            git fetch --no-tags origin \
-              "refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH"
-            base="$(git merge-base "origin/$DEFAULT_BRANCH" "$EVENT_HEAD_SHA")"
-          elif [[ ! "$base" =~ ^[0-9a-f]{40}$ || "$base" == 0000000000000000000000000000000000000000 ]]; then
-            base="$(git rev-parse HEAD^)"
-          fi
+          mode=range
           if [[ ! "$EVENT_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             echo 'event head is not an exact Git SHA' >&2
             exit 1
           fi
-          git cat-file -e "$base^{commit}"
           git cat-file -e "$EVENT_HEAD_SHA^{commit}"
+          if [[ ("$EVENT_NAME" == push || "$EVENT_NAME" == workflow_dispatch) &&
+                "$REF_NAME" == "$DEFAULT_BRANCH" ]]; then
+            mode=repository
+          else
+            if [[ "$EVENT_NAME" != pull_request &&
+                  "$EVENT_NAME" != pull_request_review ]]; then
+              git fetch --no-tags origin \
+                "refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH"
+              base="$(git merge-base "origin/$DEFAULT_BRANCH" "$EVENT_HEAD_SHA")"
+            elif [[ ! "$base" =~ ^[0-9a-f]{40}$ || "$base" == 0000000000000000000000000000000000000000 ]]; then
+              base="$(git rev-parse HEAD^)"
+            fi
+            git cat-file -e "$base^{commit}"
+          fi
           echo "base=$base" >> "$GITHUB_OUTPUT"
           echo "head=$EVENT_HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
       - name: Validate required check contract
         shell: bash
         run: |
@@ -128,6 +134,7 @@ jobs:
         env:
           BASE_SHA: ${{ steps.revision.outputs.base }}
           HEAD_SHA: ${{ steps.revision.outputs.head }}
+          VALIDATION_MODE: ${{ steps.revision.outputs.mode }}
         run: |
           set -euo pipefail
           python3 -m py_compile .governance/*.py
@@ -137,30 +144,42 @@ jobs:
             ruff check src/dsl_check.py
             python3 src/dsl_check.py self-test
           fi
-          python3 .governance/governance_check.py \
-            --root . \
-            --manifest .governance/manifest.json \
-            --lock .governance/manifest.lock.json \
-            --stack-profiles .governance/stack-profiles.json \
-            --base "$BASE_SHA" \
-            --head "$HEAD_SHA" \
+          governance_args=(
+            --root .
+            --manifest .governance/manifest.json
+            --lock .governance/manifest.lock.json
+            --stack-profiles .governance/stack-profiles.json
             --actor ci
+          )
+          case "$VALIDATION_MODE" in
+            range) governance_args+=(--base "$BASE_SHA" --head "$HEAD_SHA") ;;
+            repository) governance_args+=(--changed-file project/TICKETS.md) ;;
+            *) echo "unknown validation mode: $VALIDATION_MODE" >&2; exit 1 ;;
+          esac
+          python3 .governance/governance_check.py "${governance_args[@]}"
       - name: Run networkless Docker checks
         shell: bash
         env:
           BASE_SHA: ${{ steps.revision.outputs.base }}
           HEAD_SHA: ${{ steps.revision.outputs.head }}
+          VALIDATION_MODE: ${{ steps.revision.outputs.mode }}
         run: |
           set -euo pipefail
           docker build -t wellmanifest-dsl-ci .
           changed_args=()
-          while IFS= read -r -d '' path; do
-            changed_args+=(--changed-file "$path")
-          done < <(git diff --name-only -z "$BASE_SHA...$HEAD_SHA")
-          if [[ "${#changed_args[@]}" -eq 0 ]]; then
-            echo 'protected change set is empty' >&2
-            exit 1
-          fi
+          case "$VALIDATION_MODE" in
+            range)
+              while IFS= read -r -d '' path; do
+                changed_args+=(--changed-file "$path")
+              done < <(git diff --name-only -z "$BASE_SHA...$HEAD_SHA")
+              if [[ "${#changed_args[@]}" -eq 0 ]]; then
+                echo 'protected change set is empty' >&2
+                exit 1
+              fi
+              ;;
+            repository) changed_args+=(--changed-file project/TICKETS.md) ;;
+            *) echo "unknown validation mode: $VALIDATION_MODE" >&2; exit 1 ;;
+          esac
           docker run --rm --network none wellmanifest-dsl-ci \
             python3 .governance/governance_check.py \
               --root . \
@@ -200,27 +219,36 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $base = $env:EVENT_BASE_SHA
-          if (
-            $env:EVENT_NAME -ne 'pull_request' -and
-            $env:EVENT_NAME -ne 'pull_request_review' -and
-            $env:REF_NAME -ne $env:DEFAULT_BRANCH
-          ) {
-            git fetch --no-tags origin "refs/heads/$($env:DEFAULT_BRANCH):refs/remotes/origin/$($env:DEFAULT_BRANCH)"
-            if ($LASTEXITCODE -ne 0) { throw 'default branch fetch failed' }
-            $base = (git merge-base "origin/$env:DEFAULT_BRANCH" $env:EVENT_HEAD_SHA).Trim()
-          } elseif ($base -notmatch '^[0-9a-f]{40}$' -or $base -eq ('0' * 40)) {
-            $base = (git rev-parse 'HEAD^').Trim()
-          }
+          $repositoryMode = (
+            ($env:EVENT_NAME -eq 'push' -or $env:EVENT_NAME -eq 'workflow_dispatch') -and
+            $env:REF_NAME -eq $env:DEFAULT_BRANCH
+          )
           if ($env:EVENT_HEAD_SHA -notmatch '^[0-9a-f]{40}$') {
             throw 'event head is not an exact Git SHA'
           }
-          git cat-file -e "$base^{commit}"
-          if ($LASTEXITCODE -ne 0) { throw "missing base commit $base" }
           git cat-file -e "$env:EVENT_HEAD_SHA^{commit}"
           if ($LASTEXITCODE -ne 0) { throw "missing head commit $env:EVENT_HEAD_SHA" }
+          if (-not $repositoryMode) {
+            if (
+              $env:EVENT_NAME -ne 'pull_request' -and
+              $env:EVENT_NAME -ne 'pull_request_review'
+            ) {
+              git fetch --no-tags origin "refs/heads/$($env:DEFAULT_BRANCH):refs/remotes/origin/$($env:DEFAULT_BRANCH)"
+              if ($LASTEXITCODE -ne 0) { throw 'default branch fetch failed' }
+              $base = (git merge-base "origin/$env:DEFAULT_BRANCH" $env:EVENT_HEAD_SHA).Trim()
+            } elseif ($base -notmatch '^[0-9a-f]{40}$' -or $base -eq ('0' * 40)) {
+              $base = (git rev-parse 'HEAD^').Trim()
+            }
+            git cat-file -e "$base^{commit}"
+            if ($LASTEXITCODE -ne 0) { throw "missing base commit $base" }
+          }
           Get-ChildItem .governance -Filter '*.json' | ForEach-Object {
             python -m json.tool $_.FullName | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "invalid JSON: $($_.FullName)" }
           }
-          ./project.bat --actor ci --base $base --head $env:EVENT_HEAD_SHA
+          if ($repositoryMode) {
+            ./project.bat --actor ci --changed-file project/TICKETS.md
+          } else {
+            ./project.bat --actor ci --base $base --head $env:EVENT_HEAD_SHA
+          }
           if ($LASTEXITCODE -ne 0) { throw 'Windows governance failed' }

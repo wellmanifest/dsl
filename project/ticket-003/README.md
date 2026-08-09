@@ -35,6 +35,16 @@ Actions is an additional protected evidence boundary, not the only entrypoint.
   current-head human or `ifuri-validator-agent[bot]` review.
 - [x] AC-06: Workflow lint, local governance, Docker, and a mutation asserting
   both required job names pass before publication.
+- [ ] AC-07: A protected default-branch push validates clean repository health
+  instead of replaying the already-approved pre-merge range against a moved
+  `origin/main`; pull requests, reviews, and topic branches retain exact-range
+  validation on Linux, Windows, and in the networkless container.
+
+Repository-health mode supplies `project/TICKETS.md` as a stable governance
+anchor. This makes the intentionally empty implementation change set explicit
+to the checker in the minimal image, which contains no Git executable, while
+still running lock, required-file, ticket, coordination, stack, and content
+checks. It is never used as an authoritative pre-merge change list.
 
 ## Participants
 
@@ -54,6 +64,12 @@ On 2026-08-09 the user answered `tak` to the exact one-workflow plan and asked
 for automated execution through the independent `subactor/*-agent` roles. This
 authorizes `EDIT` inside the declared scope; it does not authorize self-review
 or bypassing exact-head approval.
+
+After PR #1 merged, the user repeatedly asked to continue the planned automated
+work. The post-merge runs exposed a regression inside the same workflow and
+one-file scope: `GOV-BASE-001` compared the accepted pre-merge base with the
+new default-branch tip. The approved architecture is unchanged; AC-07 makes
+the intended post-merge repository-health mode explicit.
 
 ## Non-goals
 
