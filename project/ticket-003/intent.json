@@ -4,7 +4,7 @@
   "summary": "Bootstrap reusable DSL CI and Validator hand-off",
   "workstream": "infrastructure",
   "classification": {
-    "kind": "FEATURE",
+    "kind": "BUG",
     "priority": "P1",
     "origin": "requested"
   },
@@ -30,7 +30,7 @@
   "conflictsWith": [],
   "integrationTicket": null,
   "delivery": {
-    "acceptedBaseSha": "d51a1c900e59963483d0bbfe050623092eb60fff",
+    "acceptedBaseSha": "a8b4e7ab8d68e36a4457e5c1fd267e707f0b6852",
     "targetBranch": "main",
     "outcome": "Two target-owned deterministic required checks and a pinned independent-review hand-off unblock protected publication of the DSL standard.",
     "nonGoals": [
@@ -49,7 +49,7 @@
     },
     "architecture": {
       "status": "accepted",
-      "decision": "Use one target-owned workflow with two non-circular deterministic jobs plus the immutable reusable governance job; Validator review remains a separate exact-head authority.",
+      "decision": "Use one target-owned workflow with two non-circular deterministic jobs plus the immutable reusable governance job; validate exact ranges before merge and clean repository health after a protected default-branch merge; Validator review remains a separate exact-head authority.",
       "components": [
         {
           "name": "hosted-validation-boundary",

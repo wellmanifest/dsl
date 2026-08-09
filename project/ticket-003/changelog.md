@@ -24,3 +24,7 @@
 - Passed the hosted Linux, networkless Docker, and Windows governance jobs in
   Actions run `31318366817`; all deterministic acceptance criteria are now met
   and only independent exact-head review remains.
+- Reopened the ticket after protected post-merge runs `31320441866` and
+  `31320893127` exposed `GOV-BASE-001`: an already-merged default-branch push
+  must validate clean repository health, while all pre-merge events retain
+  exact range validation.

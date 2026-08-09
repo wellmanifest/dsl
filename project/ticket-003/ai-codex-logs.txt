@@ -52,3 +52,14 @@ LINUX_TEST=PASS
 LINUX_DOCKER_NETWORK_NONE=PASS
 WINDOWS_GOVERNANCE=PASS
 INDEPENDENT_REVIEW=PENDING
+
+[2026-08-09 post-merge-regression]
+BOOTSTRAP_MERGE=9e6b3d77fec03ff50931a584c0509f4c99d34d42
+STANDARD_MERGE=a8b4e7ab8d68e36a4457e5c1fd267e707f0b6852
+FAILED_RUNS=31320441866,31320893127
+FAILURE=GOV-BASE-001:target-main-moved-after-ticket-approval
+ROOT_CAUSE=default-branch-push-replayed-pre-merge-range-against-new-main-tip
+DESIGN=repository-health-on-protected-main-push;exact-range-before-merge
+ACCEPTED_BASE=a8b4e7ab8d68e36a4457e5c1fd267e707f0b6852
+SCOPE=.github/workflows/ci.yml
+STATE=EDIT
