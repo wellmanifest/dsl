@@ -51,10 +51,19 @@ jobs:
         env:
           EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           base="$EVENT_BASE_SHA"
-          if [[ ! "$base" =~ ^[0-9a-f]{40}$ || "$base" == 0000000000000000000000000000000000000000 ]]; then
+          if [[ "$EVENT_NAME" != pull_request &&
+                "$EVENT_NAME" != pull_request_review &&
+                "$REF_NAME" != "$DEFAULT_BRANCH" ]]; then
+            git fetch --no-tags origin \
+              "refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH"
+            base="$(git merge-base "origin/$DEFAULT_BRANCH" "$EVENT_HEAD_SHA")"
+          elif [[ ! "$base" =~ ^[0-9a-f]{40}$ || "$base" == 0000000000000000000000000000000000000000 ]]; then
             base="$(git rev-parse HEAD^)"
           fi
           if [[ ! "$EVENT_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
@@ -185,10 +194,21 @@ jobs:
         env:
           EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           $ErrorActionPreference = 'Stop'
           $base = $env:EVENT_BASE_SHA
-          if ($base -notmatch '^[0-9a-f]{40}$' -or $base -eq ('0' * 40)) {
+          if (
+            $env:EVENT_NAME -ne 'pull_request' -and
+            $env:EVENT_NAME -ne 'pull_request_review' -and
+            $env:REF_NAME -ne $env:DEFAULT_BRANCH
+          ) {
+            git fetch --no-tags origin "refs/heads/$($env:DEFAULT_BRANCH):refs/remotes/origin/$($env:DEFAULT_BRANCH)"
+            if ($LASTEXITCODE -ne 0) { throw 'default branch fetch failed' }
+            $base = (git merge-base "origin/$env:DEFAULT_BRANCH" $env:EVENT_HEAD_SHA).Trim()
+          } elseif ($base -notmatch '^[0-9a-f]{40}$' -or $base -eq ('0' * 40)) {
             $base = (git rev-parse 'HEAD^').Trim()
           }
           if ($env:EVENT_HEAD_SHA -notmatch '^[0-9a-f]{40}$') {

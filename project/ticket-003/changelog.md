@@ -18,3 +18,6 @@
 - Rebuilt the delivery branch with a plan-only parent commit after the first
   hosted run exposed `GOV-INTENT-003`, and preserved LF on Windows before
   checkout so managed-file digests remain byte-exact.
+- Corrected branch-push boundary resolution to use the default-branch
+  merge-base, preserving the approved `acceptedBaseSha` instead of treating the
+  plan-only parent as the delivery base.
