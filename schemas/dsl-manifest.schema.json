@@ -1,0 +1,486 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wellmanifest.dev/schemas/dsl-manifest/v1",
+  "title": "Wellmanifest DSL manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "name",
+    "version",
+    "status",
+    "purpose",
+    "domain",
+    "owners",
+    "source",
+    "ownedPaths",
+    "artifacts",
+    "namespaces",
+    "projections",
+    "lifecycle",
+    "semantics",
+    "llm",
+    "documentation",
+    "findingPolicy",
+    "conformance",
+    "mappings"
+  ],
+  "properties": {
+    "$schema": {"type": "string", "format": "uri"},
+    "schema": {"const": "wellmanifest.dsl/manifest/v1"},
+    "id": {"$ref": "#/$defs/stableId"},
+    "name": {"type": "string", "minLength": 1},
+    "version": {"$ref": "#/$defs/semver"},
+    "status": {"enum": ["experimental", "stable", "deprecated"]},
+    "purpose": {"type": "string", "minLength": 1},
+    "domain": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+    "owners": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/owner"}
+    },
+    "source": {"$ref": "#/$defs/source"},
+    "ownedPaths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/relativePath"}
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/artifact"}
+    },
+    "namespaces": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/namespace"}
+    },
+    "projections": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/projection"}
+    },
+    "lifecycle": {"$ref": "#/$defs/lifecycle"},
+    "semantics": {"$ref": "#/$defs/semantics"},
+    "llm": {"$ref": "#/$defs/llm"},
+    "documentation": {"$ref": "#/$defs/documentation"},
+    "findingPolicy": {"$ref": "#/$defs/findingPolicy"},
+    "conformance": {"$ref": "#/$defs/conformance"},
+    "mappings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/mapping"}
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "semantics": {
+            "properties": {"effectModel": {"const": "controlled-effects"}},
+            "required": ["effectModel"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "semantics": {
+            "properties": {"authoritySchema": {"type": "string", "minLength": 1}}
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "llm": {
+            "properties": {"mode": {"enum": ["input", "bidirectional"]}},
+            "required": ["mode"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "llm": {
+            "properties": {"requestSchemas": {"minItems": 1}}
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "llm": {
+            "properties": {"mode": {"enum": ["output", "bidirectional"]}},
+            "required": ["mode"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "llm": {
+            "properties": {"responseSchemas": {"minItems": 1}}
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*[a-z0-9]$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "commandName": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$"
+    },
+    "findingCode": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
+    },
+    "producerId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*[a-z0-9]$"
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "responsibilities"],
+      "properties": {
+        "kind": {"enum": ["repository", "organization", "team", "person"]},
+        "id": {"type": "string", "minLength": 1},
+        "responsibilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["semantics", "validation", "compatibility", "runtime", "security"]}
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "path", "canonical", "mediaType", "selectors"],
+      "properties": {
+        "repository": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "path": {"$ref": "#/$defs/relativePath"},
+        "declaredVersion": {"type": "string", "minLength": 1},
+        "canonical": {"enum": ["json-ast", "protobuf", "text", "markdown-embedded", "other"]},
+        "mediaType": {"type": "string", "pattern": "^[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+$"},
+        "selectors": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "digest"],
+      "properties": {
+        "path": {"$ref": "#/$defs/relativePath"},
+        "role": {
+          "enum": [
+            "normative-source",
+            "schema",
+            "grammar",
+            "parser-contract",
+            "serializer-contract",
+            "profile",
+            "example",
+            "documentation"
+          ]
+        },
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "namespace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prefix", "uri"],
+      "properties": {
+        "prefix": {"type": "string", "pattern": "^[a-z][a-z0-9._-]*$"},
+        "uri": {"type": "string", "format": "uri"}
+      }
+    },
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "mediaType", "direction", "lossless"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "mediaType": {"type": "string", "minLength": 1},
+        "direction": {"enum": ["bidirectional", "from-canonical", "to-canonical"]},
+        "lossless": {"type": "boolean"}
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["compatibility", "stability", "breaking", "additive", "fix"],
+      "properties": {
+        "compatibility": {"const": "semver"},
+        "stability": {"enum": ["experimental", "stable", "deprecated"]},
+        "breaking": {"const": "major"},
+        "additive": {"const": "minor"},
+        "fix": {"const": "patch"}
+      }
+    },
+    "semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effectModel", "unknownPolicy", "authoritySchema"],
+      "properties": {
+        "effectModel": {"enum": ["descriptive", "declarative-policy", "propose-only", "controlled-effects"]},
+        "unknownPolicy": {"enum": ["preserve", "reject", "domain-defined"]},
+        "authoritySchema": {"type": ["string", "null"]}
+      }
+    },
+    "llm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "requestSchemas",
+        "responseSchemas",
+        "naturalLanguage",
+        "sourceSchema",
+        "modelAuthority",
+        "strict"
+      ],
+      "properties": {
+        "mode": {"enum": ["none", "input", "output", "bidirectional"]},
+        "requestSchemas": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "responseSchemas": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "naturalLanguage": {"enum": ["forbidden", "typed-source-only"]},
+        "sourceSchema": {"type": ["string", "null"]},
+        "modelAuthority": {"enum": ["none", "propose-only"]},
+        "strict": {"const": true}
+      }
+    },
+    "documentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commandRoot",
+        "errorRoot",
+        "criticalRoot",
+        "commands",
+        "errorCodes",
+        "criticalCodes"
+      ],
+      "properties": {
+        "commandRoot": {"const": "docs"},
+        "errorRoot": {"const": "docs/ERROR"},
+        "criticalRoot": {"const": "docs/CRITICAL"},
+        "commands": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/commandName"}
+        },
+        "errorCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/findingCode"}
+        },
+        "criticalCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/findingCode"}
+        }
+      }
+    },
+    "findingPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "requiredProducers",
+        "securityProducers",
+        "blockingSeverities",
+        "requireEvaluable",
+        "blockUnresolvedSecurity"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/findings/v1"},
+        "requiredProducers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/producerId"}
+        },
+        "securityProducers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/producerId"}
+        },
+        "blockingSeverities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "contains": {"const": "critical"},
+          "items": {"enum": ["info", "warning", "error", "critical"]}
+        },
+        "requireEvaluable": {"const": true},
+        "blockUnresolvedSecurity": {"const": true}
+      }
+    },
+    "findingsReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "producer", "subject", "evaluable", "failureReason", "findings"],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/findings/v1"},
+        "producer": {"$ref": "#/$defs/findingsProducer"},
+        "subject": {"$ref": "#/$defs/findingsSubject"},
+        "evaluable": {"type": "boolean"},
+        "failureReason": {"type": ["string", "null"]},
+        "findings": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/finding"}
+        }
+      }
+    },
+    "findingsProducer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "adapter"],
+      "properties": {
+        "id": {"$ref": "#/$defs/producerId"},
+        "version": {"$ref": "#/$defs/semver"},
+        "adapter": {"type": "string", "minLength": 1}
+      }
+    },
+    "findingsSubject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "revision", "manifest"],
+      "properties": {
+        "repository": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "manifest": {"$ref": "#/$defs/relativePath"}
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "code",
+        "severity",
+        "security",
+        "path",
+        "helpPath",
+        "message",
+        "resolution",
+        "evidence"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "code": {"$ref": "#/$defs/findingCode"},
+        "severity": {"enum": ["info", "warning", "error", "critical"]},
+        "security": {"type": "boolean"},
+        "path": {"$ref": "#/$defs/relativePath"},
+        "helpPath": {"$ref": "#/$defs/relativePath"},
+        "message": {"type": "string", "minLength": 1},
+        "resolution": {"$ref": "#/$defs/resolution"},
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/evidenceReference"}
+        }
+      }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "summary", "resolvedAtRevision"],
+      "properties": {
+        "status": {"enum": ["open", "resolved"]},
+        "summary": {"type": ["string", "null"]},
+        "resolvedAtRevision": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{40}$"
+        }
+      }
+    },
+    "evidenceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path", "digest"],
+      "properties": {
+        "kind": {"enum": ["artifact", "receipt", "log", "attestation"]},
+        "path": {"$ref": "#/$defs/relativePath"},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["levels", "commands", "validExamples", "invalidExamples"],
+      "properties": {
+        "levels": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["manifest", "contract", "runtime", "llm-boundary"]}
+        },
+        "commands": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "validExamples": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/relativePath"}
+        },
+        "invalidExamples": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/relativePath"}
+        }
+      }
+    },
+    "mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["standard", "version", "relation"],
+      "properties": {
+        "standard": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "relation": {"enum": ["extends", "implements", "maps-to", "compatible-with"]},
+        "uri": {"type": "string", "format": "uri"}
+      }
+    }
+  }
+}

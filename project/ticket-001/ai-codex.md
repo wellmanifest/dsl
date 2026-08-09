@@ -25,13 +25,21 @@ No human identity is inferred. Interactive approval is required from
 
 ## Execution plan
 
-1. Define normative RFC-style requirements in `spec/DSL_STANDARD.md`.
-2. Define the closed `wellmanifest.dsl/manifest/v1` JSON Schema.
-3. Implement a Python standard-library validator with stable diagnostics,
-   repository confinement, hash verification, and changed-artifact ownership.
-4. Document component ownership, adoption, and control flow using Mermaid.
-5. Run validator self-tests and governance checks in Docker; review the exact
-   five-file implementation diff against `intent.json`.
+1. Extend the normative standard with derived help paths, mandatory page
+   content, normalized probe findings and publication-blocking rules.
+2. Extend the closed `wellmanifest.dsl/manifest/v1` schema with documentation,
+   finding-policy and reusable `wellmanifest.dsl/findings/v1` definitions.
+3. Extend the dependency-free validator to validate pages and provide a `gate`
+   command consuming normalized reports from tools such as twin-probes.
+4. Update architecture and logic flows to separate evidence producers from the
+   trusted publication decision and make help links deterministic.
+5. Add mutation-style self-tests for missing/miscased/incomplete pages,
+   unevaluable probes and unresolved/resolved critical findings.
+6. Run schema, Ruff, Mermaid, governance and networkless Docker checks; review
+   the exact same five implementation paths against the amended intent.
+7. Prepare separate follow-up tickets for a protected required check and local
+   pre-push hook; do not pretend that a callable validator alone is remote
+   enforcement.
 
 ## Actual changes
 
@@ -49,6 +57,16 @@ No human identity is inferred. Interactive approval is required from
   and repository-local adoption.
 - Kept the implementation at exactly five files and added no runtime
   dependency.
+- Received a new human requirement for per-command/error/security pages,
+  schema-backed probe findings and a publication block, then received approval.
+- Added strict documentation catalogs, exact page derivation and content/hash
+  checks, the closed `findings/v1` contract, and the revision-bound `gate`
+  command without adding runtime dependencies or implementation paths.
+- Added mutation tests for filename case, incomplete pages, missing/unevaluable
+  producers, and unresolved/resolved security findings.
+- Incorporated the independently approved CI bootstrap from `main`, retained
+  the exact five implementation paths, and rebound delivery to merge-base
+  `9e6b3d77fec03ff50931a584c0509f4c99d34d42` before fresh validation.
 
 ## Interactive authorization
 
@@ -59,6 +77,12 @@ No human identity is inferred. Interactive approval is required from
 - 2026-08-09: the user instructed `kontynuuj, publikuj`, authorizing commit,
   push, ticket-branch publication, and creation of a pull request. Independent
   current-head merge approval is still required.
+- 2026-08-09: the user required uppercase command help pages, error and critical
+  code pages, probe-based security detection and contracts modeled after
+  `subactor/contracts/schemas`. Because this changes the PR contract, the ticket
+  returned to `WAIT_FOR_APPROVAL` before implementation.
+- 2026-08-09: the user instructed `kontynuuj`, approving the amended five-file
+  contract. The ticket moved to `IN_PROGRESS / EDIT`.
 
 ## Risks
 
@@ -77,12 +101,8 @@ No human identity is inferred. Interactive approval is required from
 
 ## Blockers
 
-- Compose cannot allocate a new Docker network because the host address pools
-  are exhausted. Validation uses the same built image with `--network none`;
-  no test requires network access.
-- The implementation is complete and publication is authorized. The remote is
-  empty, so a non-implementation governance bootstrap must establish `main`
-  before the five implementation paths can be published through a PR.
+- Merge remains blocked until independent trusted approval targets the amended
+  current pull-request HEAD.
 
 ## Acceptance evidence
 
@@ -91,8 +111,14 @@ No human identity is inferred. Interactive approval is required from
 - AC-03/AC-04: `src/dsl_check.py`; networkless self-test and Ruff passed.
 - AC-05: `docs/ARCHITECTURE.md` and `docs/LOGIC_FLOW.md`.
 - AC-06: Docker image build and explicit five-path governance check passed.
+- AC-07/AC-08: strict documentation schema plus filename/content/artifact
+  mutation tests passed.
+- AC-09/AC-10: findings schema sample and publication gate mutations passed.
+- AC-11: evidence-producer/trust-root boundaries are normative and diagrammed.
+- AC-12: metaschema, Ruff, self-test, Mermaid rendering, governance, Docker
+  build, and networkless Docker checks passed.
 
 ## Response required
 
-- `unresolved:human`: approve or amend the understanding, five-file scope,
-  acceptance criteria, and machine intent.
+- No implementation clarification is required. Independent trusted review is
+  required before merge.

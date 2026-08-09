@@ -13,6 +13,8 @@
   `IN_PROGRESS` / `EDIT`.
 - Added the `new-project/CONTRIBUTING.md` rule DSL as the first worked profile
   without expanding the five implementation paths.
+- Recorded that its 23 selected `dsl` fences contain 90 of the document's 92
+  `RULE` declarations; the two context rules are currently fenced as `bash`.
 - Corrected the pre-stable target manifest so generic public-interface
   accounting does not treat creation of the first DSL schema as a breaking
   change; DSL compatibility remains an explicit validator responsibility.
@@ -22,3 +24,26 @@
 - Returned to `PLAN` / `WAIT_FOR_APPROVAL` for publication authorization;
   commit, push, and PR remain untouched.
 - Publication authorized; ticket moved to `IN_PROGRESS` / `PUBLICATION`.
+- Published the governance-only bootstrap as `main` commit
+  `d51a1c900e59963483d0bbfe050623092eb60fff`; no implementation file was part
+  of that commit.
+- Bound the implementation ticket to the bootstrap SHA and moved publication
+  to `ticket/001-establish-dsl-standard` for pull-request delivery.
+- Received a material scope amendment for uppercase command pages, ERROR and
+  CRITICAL catalogs, normalized probe findings and a security publication gate.
+- Returned the open ticket to `PLAN / WAIT_FOR_APPROVAL`; the existing PR head
+  remains unchanged until the amended plan is approved.
+- Received explicit `kontynuuj` approval and moved the amended ticket to
+  `IN_PROGRESS / EDIT` without expanding the five-file implementation scope.
+- Implemented the documentation catalogs, exact help-page checks, normalized
+  findings contract, and revision-bound publication gate.
+- Passed Draft 2020-12 samples, Ruff, mutation self-tests, all Mermaid renders,
+  governance, Docker build, and networkless Docker validation; moved to
+  `PUBLICATION` for the already authorized branch/PR update.
+- Incorporated the merged CI bootstrap, resolved only the shared roadmap,
+  rebound the delivery base to `9e6b3d77fec03ff50931a584c0509f4c99d34d42`,
+  and retained the approved five-file implementation boundary.
+- Removed Goal's automatic `VERSION` bump from the PR diff because release
+  metadata is outside this ticket's approved five-file implementation scope.
+- Revalidated the refreshed exact diff: schema, Ruff, self-test, all 12 Mermaid
+  diagrams, actionlint, governance, Docker and networkless gates passed.
