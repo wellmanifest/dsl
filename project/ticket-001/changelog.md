@@ -45,3 +45,5 @@
   and retained the approved five-file implementation boundary.
 - Removed Goal's automatic `VERSION` bump from the PR diff because release
   metadata is outside this ticket's approved five-file implementation scope.
+- Revalidated the refreshed exact diff: schema, Ruff, self-test, all 12 Mermaid
+  diagrams, actionlint, governance, Docker and networkless gates passed.
