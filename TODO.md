@@ -3,10 +3,10 @@
 - [x] [`ticket-001`](project/ticket-001/README.md) — define the initial DSL
   standard, manifest contract, per-command/error/security documentation, and
   deterministic change/publication gate. Amended scope: `PUBLICATION`.
-- [~] [`ticket-003`](project/ticket-003/README.md) — correcting post-merge
-  default-branch repository-health validation after bootstrapping the two
-  required deterministic CI checks and the pinned Validator hand-off; merged
-  through PR #3 as `9e6b3d77fec03ff50931a584c0509f4c99d34d42`.
+- [x] [`ticket-003`](project/ticket-003/README.md) — bootstrapped the two
+  required deterministic CI checks and pinned Validator hand-off, then fixed
+  protected post-merge repository-health validation in PR #4; verified on
+  `main` by run `31321405881`.
 - [ ] Add domain profiles for intent/evidence, query/result, digital twin,
   operation, authority, verification, and LLM exchange in subsequent scoped
   tickets.
