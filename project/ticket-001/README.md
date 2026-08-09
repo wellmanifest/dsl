@@ -2,7 +2,7 @@
 
 - **ID**: ticket-001
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
+- **Status**: DONE
 - **Workflow state**: PUBLICATION
 - **Created**: 2026-08-09
 
@@ -124,3 +124,11 @@ the shared roadmap, while the approved five-file implementation scope,
 architecture and acceptance criteria remained unchanged. The user's continued
 publication authorization permits revalidation; trusted merge approval must
 still target the resulting new PR HEAD.
+
+PR #1 passed the required Linux and Windows checks, received independent
+Validator approval for exact head
+`cdaa0e6c948946ab6959522932cc629c608899bc`, and passed the reusable governance
+gate before merging as `a8b4e7ab8d68e36a4457e5c1fd267e707f0b6852`.
+The later CI regression belonged to ticket-003, not to this five-file standard;
+after that correction, protected `main` run `31321641185` validates the complete
+repository successfully. The publication outcome is complete.
