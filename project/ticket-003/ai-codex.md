@@ -29,6 +29,18 @@ so CI must be bootstrapped in a separate infrastructure ticket based on main.
 
 - The user approved the exact one-workflow scope; implementation moved to
   `IN_PROGRESS / EDIT`.
+- Added commit-pinned Linux, Windows, and reusable governance jobs without
+  secrets or mutable action references.
+- The Linux job derives an explicit changed-file boundary before entering the
+  networkless image because the image deliberately contains no `.git` data.
+- Required-check alignment, its negative mutation, JSON/metaschema validation,
+  Python compilation, local governance, actionlint, Docker build, the
+  networkless gate, and `git diff --check` all passed. Publication is ready;
+  Windows remains intentionally pending for hosted evidence.
+- The first hosted attempt correctly exposed that plan and implementation had
+  been combined and that Windows checkout converted managed files to CRLF. The
+  replacement branch now has a plan-only parent commit and configures LF before
+  checkout; no gate or digest verification was weakened.
 
 ## Blockers
 

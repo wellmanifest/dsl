@@ -3,7 +3,7 @@
 - **ID**: ticket-003
 - **Owner**: unresolved:human
 - **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Workflow state**: PUBLICATION
 - **Created**: 2026-08-09
 
 ## Goal and scope
@@ -24,16 +24,16 @@ Actions is an additional protected evidence boundary, not the only entrypoint.
 
 - [x] AC-01: The human approves one implementation file,
   `.github/workflows/ci.yml`, on the infrastructure workstream.
-- [ ] AC-02: Job names exactly match `.governance/required-checks.json`:
+- [x] AC-02: Job names exactly match `.governance/required-checks.json`:
   `test` and `windows-governance`.
-- [ ] AC-03: Linux validates JSON contracts, Python syntax, Ruff, the DSL
+- [x] AC-03: Linux validates JSON contracts, Python syntax, Ruff, the DSL
   self-test when present, governance for the exact base/head, and a networkless
   Docker run.
 - [ ] AC-04: Windows validates the managed PowerShell/Python governance
   entrypoints for the exact pull-request base/head.
-- [ ] AC-05: The pinned reusable governance workflow accepts only an independent
+- [x] AC-05: The pinned reusable governance workflow accepts only an independent
   current-head human or `ifuri-validator-agent[bot]` review.
-- [ ] AC-06: Workflow lint, local governance, Docker, and a mutation asserting
+- [x] AC-06: Workflow lint, local governance, Docker, and a mutation asserting
   both required job names pass before publication.
 
 ## Participants

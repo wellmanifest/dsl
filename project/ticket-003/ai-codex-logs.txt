@@ -15,3 +15,25 @@ USER_REQUEST="tak"
 SCOPE=.github/workflows/ci.yml
 TRANSITION=WAIT_FOR_APPROVAL -> EDIT
 SELF_REVIEW=FORBIDDEN
+
+[2026-08-09 local-validation]
+REQUIRED_CHECK_CONTRACT=PASS:test,windows-governance
+REQUIRED_CHECK_MUTATION=PASS:renamed-windows-job-rejected
+JSON_METASCHEMA=PASS:15-documents
+PY_COMPILE=PASS
+GOVERNANCE_HOST=GOV-PASS:0-errors,0-warnings
+ACTIONLINT=v1.7.9:PASS
+DOCKER_BUILD=PASS:sha256:71fc9286a4fba14e2067f5e609574fea94915598263096158bf0ceb5fbad6953
+DOCKER_NETWORK_NONE=GOV-PASS:0-errors,0-warnings
+DIFF_CHECK=PASS
+WINDOWS_HOSTED=PENDING
+TRANSITION=EDIT -> VALIDATION -> PUBLICATION
+
+[2026-08-09 hosted-diagnosis]
+SUPERSEDED_PR=wellmanifest/dsl#2
+SUPERSEDED_HEAD=6eea4be31456e35ce1e6add94daf8f914119b47a
+LINUX_CAUSE=GOV-INTENT-003:plan-and-implementation-shared-first-commit
+WINDOWS_CAUSE=core.autocrlf-converted-managed-files-before-digest-check
+REMEDIATION=plan-only-parent-commit+pre-checkout-core.autocrlf=false
+POLICY_WEAKENED=false
+HOSTED_RETRY=PENDING

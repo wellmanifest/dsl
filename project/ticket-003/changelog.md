@@ -10,3 +10,11 @@
   checks, independent exact-head Validator review, then merge.
 - Received explicit approval for the exact one-workflow scope and moved to
   `IN_PROGRESS / EDIT`.
+- Added the target-owned, commit-pinned Linux/Windows workflow and immutable
+  reusable governance hand-off.
+- Passed local contract/mutation, schema, compile, governance, actionlint, and
+  networkless Docker validation; moved to `PUBLICATION` with hosted Windows
+  evidence still pending.
+- Rebuilt the delivery branch with a plan-only parent commit after the first
+  hosted run exposed `GOV-INTENT-003`, and preserved LF on Windows before
+  checkout so managed-file digests remain byte-exact.
