@@ -166,3 +166,55 @@ COMPOSE_NETWORK=UNAVAILABLE(all predefined address pools have been fully subnett
 COMMIT=SKIPPED(not requested)
 PUSH=SKIPPED(not requested)
 PULL_REQUEST=SKIPPED(not requested)
+
+[2026-08-09 scope amendment]
+USER_REQUIREMENT=uppercase command docs + ERROR docs + CRITICAL security docs + probe findings + strict schemas
+TWIN_PROBES_OBSERVATION=subactor.autonom-cycle/v1 carries joinable watches and evidence; probes explicitly do not enforce
+CONTRACTS_OBSERVATION=subactor/contracts/schemas uses closed Draft 2020-12 objects, stable schema identities, bounded arrays, provenance and evidence references
+DESIGN=normalized wellmanifest.dsl/findings/v1 + required-producer policy + trusted gate
+INVARIANT=documenting a critical issue does not resolve or authorize it
+IMPLEMENTATION_PATHS=unchanged five files
+TRANSITION=PUBLICATION -> WAIT_FOR_APPROVAL
+SOURCE_PUSH=SKIPPED(amended plan not yet approved)
+
+[2026-08-09 amended implementation authorization]
+USER_REQUEST="kontynuuj"
+TRANSITION=WAIT_FOR_APPROVAL -> EDIT
+IMPLEMENTATION_PATHS=spec/DSL_STANDARD.md,schemas/dsl-manifest.schema.json,src/dsl_check.py,docs/ARCHITECTURE.md,docs/LOGIC_FLOW.md
+
+[2026-08-09 amended validation]
+PY_COMPILE=PASS
+RUFF_CHECK=PASS
+RUFF_FORMAT=PASS
+DSL_SELFTEST=PASS(manifest,hash,LLM,path,ownership,help-page,finding-binding,evaluability,critical-gate)
+JSON_SCHEMA_2020_12_METASCHEMA=PASS
+MANIFEST_SCHEMA_SAMPLE=PASS
+FINDINGS_SCHEMA_SAMPLE=PASS
+MERMAID_RENDER=PASS(12 diagrams; mermaid-cli 10.9.1; /usr/bin/google-chrome)
+GOVERNANCE=PASS(0 errors,0 warnings)
+DOCKER_BUILD=PASS(wellmanifest-dsl-ticket001:validation)
+DOCKER_NETWORKLESS_SELFTEST=PASS
+DOCKER_NETWORKLESS_GOVERNANCE=PASS(0 errors,0 warnings)
+DIFF_CHECK=PASS
+IMPLEMENTATION_FILES=5
+
+[2026-08-09 corrected validation observations]
+The first amended governance run rejected the prose criterion
+"AC-07 through AC-12" because intent/v3 requires one exact AC identifier; it
+was corrected to AC-12 and governance passed. Mermaid rendering then exposed
+semicolon-sensitive sequence labels; those labels were corrected and every
+diagram rendered successfully. These were validation findings, not waived
+failures.
+
+[2026-08-09 exact-head pre-publication validation]
+PY_COMPILE=PASS
+RUFF_FORMAT=PASS
+RUFF_CHECK=PASS
+DSL_SELFTEST=PASS
+JSON_SCHEMA_2020_12_METASCHEMA=PASS
+GOVERNANCE=PASS(0 errors,0 warnings)
+DIFF_CHECK=PASS
+DOCKER_IMAGE_SHA=sha256:f8e3e3e053e3f07c3879ec3daf0c9d1a990b90920b2cc7a623cd9b13ceed6531
+DOCKER_NETWORKLESS_SELFTEST=PASS
+DOCKER_NETWORKLESS_GOVERNANCE=PASS(0 errors,0 warnings)
+TRANSITION=VALIDATION -> PUBLICATION

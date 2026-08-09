@@ -21,6 +21,8 @@
     "lifecycle",
     "semantics",
     "llm",
+    "documentation",
+    "findingPolicy",
     "conformance",
     "mappings"
   ],
@@ -64,6 +66,8 @@
     "lifecycle": {"$ref": "#/$defs/lifecycle"},
     "semantics": {"$ref": "#/$defs/semantics"},
     "llm": {"$ref": "#/$defs/llm"},
+    "documentation": {"$ref": "#/$defs/documentation"},
+    "findingPolicy": {"$ref": "#/$defs/findingPolicy"},
     "conformance": {"$ref": "#/$defs/conformance"},
     "mappings": {
       "type": "array",
@@ -142,6 +146,18 @@
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
+    "commandName": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$"
+    },
+    "findingCode": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"
+    },
+    "producerId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*[a-z0-9]$"
+    },
     "owner": {
       "type": "object",
       "additionalProperties": false,
@@ -189,7 +205,8 @@
             "parser-contract",
             "serializer-contract",
             "profile",
-            "example"
+            "example",
+            "documentation"
           ]
         },
         "digest": {"$ref": "#/$defs/digest"}
@@ -265,6 +282,164 @@
         "sourceSchema": {"type": ["string", "null"]},
         "modelAuthority": {"enum": ["none", "propose-only"]},
         "strict": {"const": true}
+      }
+    },
+    "documentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commandRoot",
+        "errorRoot",
+        "criticalRoot",
+        "commands",
+        "errorCodes",
+        "criticalCodes"
+      ],
+      "properties": {
+        "commandRoot": {"const": "docs"},
+        "errorRoot": {"const": "docs/ERROR"},
+        "criticalRoot": {"const": "docs/CRITICAL"},
+        "commands": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/commandName"}
+        },
+        "errorCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/findingCode"}
+        },
+        "criticalCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/findingCode"}
+        }
+      }
+    },
+    "findingPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "requiredProducers",
+        "securityProducers",
+        "blockingSeverities",
+        "requireEvaluable",
+        "blockUnresolvedSecurity"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/findings/v1"},
+        "requiredProducers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/producerId"}
+        },
+        "securityProducers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/producerId"}
+        },
+        "blockingSeverities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "contains": {"const": "critical"},
+          "items": {"enum": ["info", "warning", "error", "critical"]}
+        },
+        "requireEvaluable": {"const": true},
+        "blockUnresolvedSecurity": {"const": true}
+      }
+    },
+    "findingsReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "producer", "subject", "evaluable", "failureReason", "findings"],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/findings/v1"},
+        "producer": {"$ref": "#/$defs/findingsProducer"},
+        "subject": {"$ref": "#/$defs/findingsSubject"},
+        "evaluable": {"type": "boolean"},
+        "failureReason": {"type": ["string", "null"]},
+        "findings": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/finding"}
+        }
+      }
+    },
+    "findingsProducer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "adapter"],
+      "properties": {
+        "id": {"$ref": "#/$defs/producerId"},
+        "version": {"$ref": "#/$defs/semver"},
+        "adapter": {"type": "string", "minLength": 1}
+      }
+    },
+    "findingsSubject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "revision", "manifest"],
+      "properties": {
+        "repository": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "manifest": {"$ref": "#/$defs/relativePath"}
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "code",
+        "severity",
+        "security",
+        "path",
+        "helpPath",
+        "message",
+        "resolution",
+        "evidence"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "code": {"$ref": "#/$defs/findingCode"},
+        "severity": {"enum": ["info", "warning", "error", "critical"]},
+        "security": {"type": "boolean"},
+        "path": {"$ref": "#/$defs/relativePath"},
+        "helpPath": {"$ref": "#/$defs/relativePath"},
+        "message": {"type": "string", "minLength": 1},
+        "resolution": {"$ref": "#/$defs/resolution"},
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/evidenceReference"}
+        }
+      }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "summary", "resolvedAtRevision"],
+      "properties": {
+        "status": {"enum": ["open", "resolved"]},
+        "summary": {"type": ["string", "null"]},
+        "resolvedAtRevision": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{40}$"
+        }
+      }
+    },
+    "evidenceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path", "digest"],
+      "properties": {
+        "kind": {"enum": ["artifact", "receipt", "log", "attestation"]},
+        "path": {"$ref": "#/$defs/relativePath"},
+        "digest": {"$ref": "#/$defs/digest"}
       }
     },
     "conformance": {

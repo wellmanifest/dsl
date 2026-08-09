@@ -14,6 +14,7 @@ flowchart LR
     DP[Domain DSL repository\nsemantic owner]
     AP[Adopting project]
     CI[Deterministic CI gate]
+    PROBE[Deterministic evidence producers]
     LLM[LLM provider adapter]
     RT[Trusted runtime]
 
@@ -21,6 +22,8 @@ flowchart LR
     DS -->|manifest schema + dsl_check| DP
     DP -->|versioned profile + manifest| AP
     AP --> CI
+    AP --> PROBE
+    PROBE -->|wellmanifest.dsl/findings/v1| CI
     CI -->|validated semantic payload| LLM
     LLM -->|strict proposed DSL| CI
     CI -->|authority checked separately| RT
@@ -34,6 +37,7 @@ flowchart LR
 | `wellmanifest/dsl` | manifest kernel, cross-language invariants, diagnostics, conformance protocol | every domain grammar |
 | Domain DSL repository | grammar/AST, semantics, compatibility, migrations, domain profiles | generic repository governance |
 | Adopting project | pinned manifest/profile versions and local bindings | upstream contract redefinition |
+| Evidence producer | observations normalized by a deterministic adapter | publication authority or waivers |
 | LLM adapter | provider transport and structured-output negotiation | acceptance, authority, execution, receipts |
 | Trusted runtime | semantic validation, capability binding, authority, effects, receipts | accepting malformed model output |
 
@@ -52,6 +56,8 @@ flowchart TB
     P[Projections + mappings]
     E[Effect + authority model]
     L[LLM boundary]
+    D[Command + error + critical documentation]
+    F[Required findings producers + blocking policy]
     C[Conformance levels + commands]
 
     M --> I
@@ -61,6 +67,8 @@ flowchart TB
     M --> P
     M --> E
     M --> L
+    M --> D
+    M --> F
     M --> C
 ```
 
@@ -73,7 +81,46 @@ that JSON Schema cannot reliably perform across repository state:
 - finding multiple manifest owners;
 - inspecting Git changes;
 - recognizing embedded `dsl` fences;
-- enforcing conditional LLM and authority invariants.
+- enforcing conditional LLM and authority invariants;
+- deriving exact case-sensitive help paths and validating page content;
+- joining normalized findings to the owning manifest and exact revision;
+- failing closed on missing/unevaluable producers and unresolved security.
+
+## Discoverable help and findings boundary
+
+```mermaid
+flowchart LR
+    CAT[Manifest catalogs]
+    CMD[docs/COMMAND.md]
+    ERR[docs/ERROR/CODE.md]
+    CRIT[docs/CRITICAL/CODE.md]
+    TP[twin-probes or another detector]
+    AD[Deterministic adapter]
+    FR[findings/v1 report]
+    G[Protected dsl_check gate]
+    PUB{Publish?}
+
+    CAT --> CMD
+    CAT --> ERR
+    CAT --> CRIT
+    TP --> AD --> FR --> G
+    CMD --> G
+    ERR --> G
+    CRIT --> G
+    G -->|all required evidence evaluable and no open blocker| PUB
+    G -->|missing docs/evidence or open security| BLOCK[Block]
+```
+
+The manifest, not a detector, defines the stable command/error/security
+vocabulary. A detector finding joins to that vocabulary through its exact
+`helpPath`. Its evidence joins to repository files through relative paths and
+SHA-256 values. The report also binds the owning manifest and gated Git SHA.
+
+The adapter is deliberately replaceable: `twin-probes`, validator-agent, or a
+domain checker can emit their own native format, then normalize it. The
+protected `dsl_check gate` remains the only publication decision point. A local
+pre-push hook can call the same command for fast feedback but is not a trust
+boundary because it can be bypassed.
 
 ## Canonical representation and projections
 

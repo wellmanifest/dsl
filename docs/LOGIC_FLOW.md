@@ -13,8 +13,11 @@ flowchart TD
     G[Set model authority to propose-only]
     H[Create dsl-manifest.json]
     I[Bind normative artifacts by SHA-256]
-    J[Add deterministic conformance commands]
-    K[Run dsl_check validate]
+    J[Declare uppercase commands and diagnostic codes]
+    K[Create exact help pages and bind their hashes]
+    P[Declare required findings producers]
+    Q[Add deterministic conformance commands]
+    R[Run dsl_check validate and gate]
     L{Pass?}
     M[Publish pre-stable or versioned DSL]
     N[Fix stable diagnostics]
@@ -22,9 +25,9 @@ flowchart TD
     A --> B --> C --> D --> E
     E -->|yes| F --> G --> H
     E -->|no| H
-    H --> I --> J --> K --> L
+    H --> I --> J --> K --> P --> Q --> R --> L
     L -->|yes| M
-    L -->|no| N --> K
+    L -->|no| N --> R
 ```
 
 Creation fails closed when ownership, source identity, authority, or canonical
@@ -45,7 +48,7 @@ sequenceDiagram
     Gate->>Manifest: resolve exactly one owner
     Gate->>Manifest: verify artifact path and digest
     alt unclaimed, overlapping, or stale
-        Gate-->>Dev: stable DSL-* diagnostic; block
+        Gate-->>Dev: stable DSL-* diagnostic and block
     else structurally and semantically valid
         Gate-->>Review: deterministic conformance evidence
         Review-->>Dev: approve/reject exact head
@@ -139,6 +142,42 @@ manifest. Provider metadata, token counts, costs, timestamps, and raw response
 hashes belong to a runtime-owned receipt and cannot alter the semantic result
 hash.
 
+## Documentation and security publication gate
+
+```mermaid
+sequenceDiagram
+    participant Source as DSL source/registry
+    participant Manifest as dsl-manifest.json
+    participant Docs as docs catalogs
+    participant Probe as twin-probes/domain detector
+    participant Adapter as Deterministic adapter
+    participant Gate as Protected dsl_check gate
+
+    Gate->>Manifest: load strict manifest and finding policy
+    Gate->>Docs: derive every exact case-sensitive help path
+    Gate->>Docs: verify title, required sections, ownership, SHA-256
+    Probe->>Adapter: native observations and evidence
+    Adapter->>Gate: findings/v1 bound to repository + exact revision
+    Gate->>Gate: require every configured producer and evaluable=true
+    alt missing/incomplete docs or evidence
+        Gate-->>Source: DSL-DOC-* or DSL-FINDINGS-* and block
+    else unresolved critical/security finding
+        Gate-->>Source: DSL-CRITICAL-001 with direct helpPath and block
+    else all blockers resolved with evidence
+        Gate-->>Source: deterministic publication pass
+    end
+```
+
+A normalized finding points to `docs/ERROR/<CODE>.md` or
+`docs/CRITICAL/<CODE>.md`; it cannot choose a looser alias. A resolved finding
+must carry a summary, exact resolving revision, and digest-bound evidence. An
+open critical page remains useful help but never changes the blocking verdict.
+
+If a required producer cannot run, its adapter emits `evaluable=false` with a
+failure reason. Absence of a report and an unevaluable security report both
+fail closed. Probe output is evidence; only the protected gate has verdict
+authority.
+
 ## Applying the standard to `new-project/CONTRIBUTING.md`
 
 The current contributor document already contains the language definition and
@@ -163,6 +202,10 @@ The repository-local adoption ticket should:
 - map native `VERSION 9` to manifest SemVer `9.0.0`;
 - declare `markdown-embedded` plus `fenced-code:dsl`;
 - bind `CONTRIBUTING.md` by exact SHA-256;
+- declare every uppercase construct and create `docs/<COMMAND>.md` pages;
+- declare governance error/security codes and create exact `ERROR`/`CRITICAL`
+  pages before claiming conformance;
+- configure at least one deterministic security findings producer;
 - classify it as `declarative-policy`;
 - preserve the existing deterministic governance checker;
 - add `dsl_check changes` to the protected PR checks.
@@ -189,6 +232,14 @@ not copy the example digest blindly.
 | `DSL-LLM-001` | LLM schemas, strictness, NL policy, or model authority is invalid. |
 | `DSL-CONFORMANCE-001` | Claimed conformance evidence is missing. |
 | `DSL-GIT-001` | Accepted-base/head change set cannot be established. |
+| `DSL-DOC-001` | Required catalog/root/help page is missing or invalid. |
+| `DSL-DOC-002` | A help page exists with incorrect filename case. |
+| `DSL-DOC-003` | A help page lacks its exact title or required non-empty sections. |
+| `DSL-DOC-004` | A help page is not owned and digest-bound by its manifest. |
+| `DSL-FINDINGS-001` | A normalized findings report or evidence reference is invalid. |
+| `DSL-FINDINGS-002` | A required findings producer is missing or unevaluable. |
+| `DSL-FINDINGS-003` | A report does not bind the owning repository/manifest/revision. |
+| `DSL-CRITICAL-001` | An unresolved blocking severity or security finding exists. |
 
 Diagnostics are deterministic. Corrective text from an LLM is advisory and
 must pass the same gate as a human-authored change.

@@ -1,7 +1,7 @@
 {
   "schema": "new-project.intent/v3",
   "ticket": "ticket-001",
-  "summary": "Establish reusable DSL standards and conformance gate",
+  "summary": "Establish reusable DSL standards, documented vocabulary, and security findings gate",
   "workstream": "integration",
   "classification": {
     "kind": "FEATURE",
@@ -34,10 +34,13 @@
   "delivery": {
     "acceptedBaseSha": "d51a1c900e59963483d0bbfe050623092eb60fff",
     "targetBranch": "main",
-    "outcome": "A reusable DSL kernel standard and deterministic change gate that other repositories can adopt without importing domain implementations.",
+    "outcome": "A reusable DSL kernel with deterministic command/error/security documentation and a publication-blocking normalized findings gate.",
     "nonGoals": [
       "Migrate existing DSL repositories in ticket-001",
       "Define all domain profiles in the initial kernel",
+      "Modify twin-probes or subactor/contracts in this ticket",
+      "Treat a documented critical issue as resolved or approved",
+      "Install CI or local hook files before the gate contract is merged",
       "Publish or merge without independent current-head review"
     ],
     "complexity": "S",
@@ -50,7 +53,7 @@
     },
     "architecture": {
       "status": "accepted",
-      "decision": "Use one neutral manifest and standard with deterministic validation; domain DSLs remain versioned profiles owned by their source projects.",
+      "decision": "Use one neutral manifest with derived case-sensitive help paths and normalized probe findings; domain DSLs own their vocabulary while a trusted gate, never a probe, decides publication.",
       "components": [
         {
           "name": "normative-contracts",
@@ -71,7 +74,8 @@
       "responsibilityChanges": false,
       "interfaceChanges": [],
       "dataChanges": [
-        "Introduce wellmanifest.dsl/manifest/v1 as a new pre-stable contract"
+        "Introduce wellmanifest.dsl/manifest/v1 as a new pre-stable contract",
+        "Add a strict documentation catalog and wellmanifest.dsl/findings/v1 definition to the pre-stable manifest schema"
       ],
       "ui": {
         "impact": "none",
@@ -93,6 +97,14 @@
         "criterion": "AC-06",
         "commands": [
           "docker run --rm --network none dsl-governance python3 .governance/governance_check.py --root . --manifest .governance/manifest.json --lock .governance/manifest.lock.json --stack-profiles .governance/stack-profiles.json --actor agent --changed-file spec/DSL_STANDARD.md --changed-file schemas/dsl-manifest.schema.json --changed-file src/dsl_check.py --changed-file docs/ARCHITECTURE.md --changed-file docs/LOGIC_FLOW.md"
+        ],
+        "evidence": "project/ticket-001/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-12",
+        "commands": [
+          "python3 src/dsl_check.py self-test",
+          "python3 src/dsl_check.py gate --root <fixture-root> --findings <report.json>"
         ],
         "evidence": "project/ticket-001/ai-codex-logs.txt"
       }

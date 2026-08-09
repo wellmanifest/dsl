@@ -29,3 +29,14 @@
   of that commit.
 - Bound the implementation ticket to the bootstrap SHA and moved publication
   to `ticket/001-establish-dsl-standard` for pull-request delivery.
+- Received a material scope amendment for uppercase command pages, ERROR and
+  CRITICAL catalogs, normalized probe findings and a security publication gate.
+- Returned the open ticket to `PLAN / WAIT_FOR_APPROVAL`; the existing PR head
+  remains unchanged until the amended plan is approved.
+- Received explicit `kontynuuj` approval and moved the amended ticket to
+  `IN_PROGRESS / EDIT` without expanding the five-file implementation scope.
+- Implemented the documentation catalogs, exact help-page checks, normalized
+  findings contract, and revision-bound publication gate.
+- Passed Draft 2020-12 samples, Ruff, mutation self-tests, all Mermaid renders,
+  governance, Docker build, and networkless Docker validation; moved to
+  `PUBLICATION` for the already authorized branch/PR update.

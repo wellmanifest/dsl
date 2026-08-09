@@ -173,6 +173,66 @@ The following are breaking unless a profile specifies a stricter rule:
 Deprecated DSLs MUST retain an owner and migration target until their declared
 support period ends.
 
+### 2.9 Discoverable commands, errors, and critical issues
+
+Every manifest MUST declare its complete public command vocabulary in
+`documentation.commands`. Command names MUST use uppercase ASCII with optional
+digits and underscores. Each command MUST have one exact, case-sensitive page:
+
+```text
+docs/<COMMAND>.md
+```
+
+The page title MUST be `# <COMMAND>` and it MUST contain non-empty `Purpose`,
+`Syntax`, `Inputs`, `Outputs`, `Errors`, and `Examples` sections.
+
+Runtime error codes MUST be declared in `documentation.errorCodes` and use the
+exact path `docs/ERROR/<CODE>.md`. Security and critical codes MUST be declared
+in `documentation.criticalCodes` and use
+`docs/CRITICAL/<CODE>.md`. Error pages MUST contain `Meaning`, `Cause`, and
+`Resolution`; critical pages MUST contain `Risk`, `Detection`, `Remediation`,
+and `Verification`. These pages are normative `documentation` artifacts and
+MUST be covered by `ownedPaths` and bound by SHA-256.
+
+Codes MUST use uppercase hyphen-separated identifiers. A code cannot be both an
+ordinary error and a critical/security code. Paths are derived from the catalog,
+not supplied as aliases, so a diagnostic can always return a direct help path.
+
+The catalog MUST be complete. A representation whose vocabulary cannot be
+derived generically MUST provide a deterministic conformance command that
+compares its grammar, schema, or parser registry with the manifest catalog.
+An LLM assertion that the catalog is complete is not conformance evidence.
+
+### 2.10 Normalized findings and publication policy
+
+Every manifest MUST declare `findingPolicy` for reports conforming to
+`wellmanifest.dsl/findings/v1`. At least one security-capable deterministic
+producer is required. `securityProducers` MUST be a subset of
+`requiredProducers`; `requireEvaluable` and `blockUnresolvedSecurity` MUST be
+true, and `blockingSeverities` MUST include `critical`.
+
+The reusable report contract is
+`schemas/dsl-manifest.schema.json#/$defs/findingsReport`. It is a closed Draft
+2020-12 object and binds:
+
+- producer ID, version, and deterministic adapter;
+- repository, exact 40-character revision, and owning manifest path;
+- an explicit `evaluable` result and failure reason;
+- stable finding ID and code, severity, security classification, source path,
+  exact help path, message, and resolution state;
+- repository-relative evidence paths with SHA-256 digests.
+
+An unevaluable required producer MUST fail closed. An unresolved finding MUST
+block publication when its severity is listed in `blockingSeverities` or it is
+classified as security. Creating `docs/CRITICAL/<CODE>.md` makes remediation
+discoverable; it never waives or resolves the finding.
+
+Tools such as `subactor/twin-probes` and producers of
+`subactor.autonom-cycle/v1` MAY generate evidence. They MUST pass through a
+deterministic adapter to the normalized report and remain evidence producers,
+not trust roots. Only the protected deterministic gate decides the publication
+verdict.
+
 ## 3. Manifest location
 
 The default filename is `dsl-manifest.json`. A monorepo MAY contain multiple
@@ -206,6 +266,7 @@ For every new or changed DSL, CI MUST run:
 ```bash
 python3 src/dsl_check.py validate <manifest-or-repository>
 python3 src/dsl_check.py changes --root . --base <accepted-base> --head <head>
+python3 src/dsl_check.py gate --root . --findings <producer-report.json>
 ```
 
 A Git-aware protected workflow SHOULD use `--base` and `--head`. A networkless
@@ -220,7 +281,18 @@ The gate checks:
 3. artifact existence and SHA-256 binding;
 4. unique ownership of changed DSL-sensitive files;
 5. presence of changed contract artifacts in the owner manifest;
-6. LLM and authority invariants.
+6. LLM and authority invariants;
+7. exact command, error, and critical help paths, titles, sections, ownership,
+   and digests;
+8. normalized finding structure and repository/revision binding;
+9. presence and evaluability of every required producer;
+10. absence of unresolved blocking or security findings.
+
+The `gate` command resolves the gated revision from Git `HEAD`. A protected
+Git-free environment MUST pass the exact revision with `--revision`; the
+revision value must come from the protected checkout or CI event, never from an
+LLM or from the findings producer itself. One `--findings` argument is supplied
+for every producer/manifest pair.
 
 Stable diagnostic codes are part of the conformance interface.
 
@@ -261,8 +333,8 @@ At the locally inspected revision, the document contains 23 `dsl` fences and
 the selected `dsl` fences; `C-CONTEXT-001` and `C-CONTEXT-002` are inside a
 `bash` fence and are therefore not selected by `fenced-code:dsl`. This existing
 label mismatch is recorded rather than silently broadening the selector to all
-shell examples. A conforming manifest for those exact source bytes has the
-following shape (the digest is intentionally bound to the inspected bytes):
+shell examples. The following pre-adoption candidate binds those exact source
+bytes and declares the required vocabulary and finding policy:
 
 ```json
 {
@@ -289,7 +361,7 @@ following shape (the digest is intentionally bound to the inspected bytes):
     "mediaType": "text/markdown",
     "selectors": ["fenced-code:dsl"]
   },
-  "ownedPaths": ["CONTRIBUTING.md", "dsl-manifest.json"],
+  "ownedPaths": ["CONTRIBUTING.md", "dsl-manifest.json", "docs/**"],
   "artifacts": [
     {
       "path": "CONTRIBUTING.md",
@@ -322,6 +394,26 @@ following shape (the digest is intentionally bound to the inspected bytes):
     "modelAuthority": "none",
     "strict": true
   },
+  "documentation": {
+    "commandRoot": "docs",
+    "errorRoot": "docs/ERROR",
+    "criticalRoot": "docs/CRITICAL",
+    "commands": [
+      "DOCUMENT", "VERSION", "LANGUAGE", "MODE", "PURPOSE", "POLICY",
+      "ENV_FILE", "VARIABLE", "SECRET", "RULE", "TYPE", "WHEN", "DO",
+      "REQUIRE", "ALLOW", "FORBID", "ASSERT", "NEXT", "STATE", "TRANSITION"
+    ],
+    "errorCodes": [],
+    "criticalCodes": []
+  },
+  "findingPolicy": {
+    "schema": "wellmanifest.dsl/findings/v1",
+    "requiredProducers": ["wellmanifest.new-project.governance-check"],
+    "securityProducers": ["wellmanifest.new-project.governance-check"],
+    "blockingSeverities": ["critical"],
+    "requireEvaluable": true,
+    "blockUnresolvedSecurity": true
+  },
   "conformance": {
     "levels": ["manifest", "contract", "runtime"],
     "commands": ["./project/governance-check.sh --actor agent"],
@@ -332,9 +424,11 @@ following shape (the digest is intentionally bound to the inspected bytes):
 }
 ```
 
-This example describes the existing language; it does not claim that
-`new-project` has already adopted the manifest. Adoption requires a separate
-ticket and repository-local digest verification.
+This candidate describes the existing language; it does not claim that
+`new-project` has already adopted or passed the manifest. Adoption requires a
+separate ticket that creates and digest-binds every declared command page,
+declares the producer's stable error/critical catalog, adds those pages to
+`artifacts`, and recomputes every digest at the accepted repository revision.
 
 ## 7. Profile evolution
 
