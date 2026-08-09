@@ -227,3 +227,5 @@ IMPLEMENTATION_PATHS=unchanged five files
 ARCHITECTURE_CHANGED=false
 SCOPE_CHANGED=false
 TRUSTED_REVIEW=REQUIRED_ON_NEW_HEAD
+GOAL_AUTOBUMP_REVERTED=VERSION:0.1.1->0.1.0-dev
+REASON=VERSION_is_outside_the_approved_five-file_implementation_scope

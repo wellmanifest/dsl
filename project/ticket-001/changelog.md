@@ -43,3 +43,5 @@
 - Incorporated the merged CI bootstrap, resolved only the shared roadmap,
   rebound the delivery base to `9e6b3d77fec03ff50931a584c0509f4c99d34d42`,
   and retained the approved five-file implementation boundary.
+- Removed Goal's automatic `VERSION` bump from the PR diff because release
+  metadata is outside this ticket's approved five-file implementation scope.
