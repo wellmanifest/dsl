@@ -1,0 +1,74 @@
+$ ./project/governance-check.sh --actor agent --changed-file <ticket-004 bounded paths>
+GOV-DELIVERY-001 ERROR: Implementation ticket ticket-004 has no bounded delivery contract. [project/ticket-004/intent.json]
+  remediation: Return to WAIT_FOR_APPROVAL, declare one <=30-minute XS/S outcome with architecture and validation evidence, then obtain fresh approval.
+GOV-FAIL: failed (1 errors, 0 warnings)
+
+$ ./project/governance-check.sh --actor agent --changed-file <ticket-004 bounded paths>
+GOV-DELIVERY-001 ERROR: Ticket ticket-004 exceeds the approved delivery class or policy budget. [project/ticket-004/intent.json]
+  remediation: Split the outcome into dependent XS/S slices; do not widen the current ticket or PR.
+GOV-FAIL: failed (1 errors, 0 warnings)
+
+$ ./project/governance-check.sh --actor agent --changed-file <ticket-004 bounded paths>
+GOV-PASS: passed (0 errors, 0 warnings)
+
+$ publication-authorization
+2026-08-11: user separately requested continuation and push; commit and branch
+push are authorized. Pull request creation, trusted review, and merge are not.
+
+$ todo2code pipeline . --task project/ticket-004/preprompt.md --git-count 100 --nl-mode require-llm --markdown-mode require-llm --communication-mode require-llm --task-mode require-llm
+FAIL stage=communicationAnalysis code=LLM_RESPONSE_INVALID
+reason=response is missing required properties: participantSyntheses
+disposition=fail-closed contract retained; communication input scoped to active ticket
+
+$ todo2code pipeline . --task project/ticket-004/preprompt.md --git-count 100 --nl-mode require-llm --markdown-mode require-llm --communication-mode require-llm --communication-ticket ticket-004 --task-mode require-llm
+runId: 20260811T163154Z-6eb2ad43
+graphFingerprint: d3c3623399ee8bd1db431f520fed23f5ba6ce622aa347a172cf4c89eaad8e1b2
+status: degraded
+failure: none
+model: z-ai/glm-5.2
+LLM stages used: NL, Markdown, documentation, communication, task synthesis, summary
+documentation: partial, 12 of 19 chunks under configured budget
+diagnostics: info=205 warning=423 review_required=7 blocking=5 total=640
+classification: all five blocking findings pair identical or overlapping source lines; todo2code same-source extraction defect, not independent repository intent
+costUsd: 0.239801316
+
+$ repository-cache-check
+REPOSITORY-CACHE PASS: .intent absent
+
+$ docker run --rm --network none wellmanifest-dsl-ticket004-audit:20260811 python3 src/dsl_check.py self-test
+SELFTEST PASS: manifest, hash, LLM, path, ownership, help-page, finding-binding, evaluability, and critical-gate cases
+
+$ docker run --rm --network none wellmanifest-dsl-ticket004-audit:20260811 python3 .governance/governance_check.py <ticket-004 bounded paths>
+GOV-PASS: passed (0 errors, 0 warnings)
+
+$ markdown-local-link-check README.md CHANGELOG.md TODO.md project/TICKETS.md project/ticket-004/README.md
+MARKDOWN-LINKS PASS: 26 local references
+
+$ todo2code pipeline . --git-count 100 --no-docs-llm --no-summary-llm --task-mode disabled
+runId: 20260811T155910Z-b630e6c7
+graphFingerprint: c67346218fb9ccd77bf3c10eb80948d1dc8d8049d13ab9831ed2f5e50bae12c0
+status: succeeded
+runtime: todo2code 0.5.0
+LLM stages used: none
+warnings:
+- Requested 100 commits, repository contains 19
+- ticket-001/decisions.md: participant is missing
+- ticket-001/decisions.md: role must be human or agent
+diagnostics:
+- info: 219
+- warning: 397
+- review_required: 46
+- blocking: 0
+- total: 662
+
+$ repository-cache-check
+REPOSITORY-CACHE PASS: .intent absent
+
+$ git diff --check
+PASS
+
+$ jq empty project/ticket-004/intent.json
+PASS
+
+$ ./project/governance-check.sh --actor agent --changed-file <ticket-004 bounded paths>
+GOV-PASS: passed (0 errors, 0 warnings)

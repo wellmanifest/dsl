@@ -1,0 +1,90 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-004",
+  "summary": "Reconcile repository status and intent evidence",
+  "workstream": "governance",
+  "classification": {
+    "kind": "BUG",
+    "priority": "P2",
+    "origin": "regression"
+  },
+  "delivery": {
+    "acceptedBaseSha": "550e5f441c709e15f2679c1af151352d1eba2f1e",
+    "targetBranch": "main",
+    "outcome": "Public status, release history, and roadmap accurately describe the protected 0.1.0-dev baseline and its explicitly unscheduled follow-up work.",
+    "nonGoals": [
+      "Implement domain profiles or adoption mappings",
+      "Wire dsl_check.py gate into protected CI",
+      "Rewrite historical ticket evidence",
+      "Create human-owned participant content",
+      "Commit, push, or merge without a separate request and trusted review"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 20,
+    "budgets": {
+      "maxImplementationFiles": 3,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Keep the executable DSL baseline unchanged and reconcile only the three public project-status documents, with all new governance evidence isolated in ticket-004.",
+      "components": [
+        {
+          "name": "repository-status-documentation",
+          "paths": ["README.md", "CHANGELOG.md", "TODO.md"]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the three public documentation files through a reviewed governance ticket; preserve ticket-004 evidence."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": ["review README.md against VERSION and protected main"],
+        "evidence": "project/ticket-004/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-02",
+        "commands": ["review CHANGELOG.md against git log and merged pull requests"],
+        "evidence": "project/ticket-004/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-03",
+        "commands": ["review TODO.md ticket and authorization boundaries"],
+        "evidence": "project/ticket-004/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-04",
+        "commands": ["git diff --name-only", "git diff --check"],
+        "evidence": "project/ticket-004/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-05",
+        "commands": ["./project/governance-check.sh --actor agent", "docker run --rm --network none wellmanifest-dsl-ticket004-audit python3 src/dsl_check.py self-test", "todo2code deterministic baseline", "todo2code six-stage LLM pipeline"],
+        "evidence": "project/ticket-004/ai-codex-logs.txt"
+      }
+    ]
+  },
+  "allowedPaths": [
+    "README.md",
+    "CHANGELOG.md",
+    "TODO.md",
+    "project/TICKETS.md",
+    "project/ticket-004/**"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null
+}
