@@ -10,16 +10,23 @@ deterministic checks applied whenever a DSL is created or changed.
 
 ## Current status
 
-Bootstrap and planning. Implementation is tracked by
-[`project/ticket-001`](project/ticket-001/README.md) and must remain in
-`WAIT_FOR_APPROVAL` until its scope is explicitly accepted.
+The reusable DSL baseline is implemented as version `0.1.0-dev`.
+[`ticket-001`](project/ticket-001/README.md) delivered the normative standard,
+schema, validator, and architecture documentation; [`ticket-003`](project/ticket-003/README.md)
+added the protected Linux and Windows CI checks. Both tickets are complete and
+the current `main` passes governance and DSL self-tests.
+
+Domain profiles, adoption mappings, and production use of `dsl_check.py gate`
+remain explicitly unscheduled roadmap work. Each requires its own bounded
+ticket before implementation.
 
 ## Governance
 
 This repository adopts `wellmanifest/new-project` `v0.14.0` by immutable
-commit. Read [`AGENTS.md`](AGENTS.md), the active ticket, and
-[`TODO.md`](TODO.md) before changing standards or tooling.
+commit. Read [`AGENTS.md`](AGENTS.md), [`TODO.md`](TODO.md), and the matching
+active ticket, when one exists, before changing standards or tooling.
 
-Normative contracts will live under `spec/` and `schemas/`. Human guidance will
-live under `docs/`, examples under `examples/`, and deterministic conformance
-tooling under `src/` and `tests/`.
+Normative contracts live under `spec/` and `schemas/`. Human guidance lives
+under `docs/`; deterministic conformance tooling lives under `src/` and
+`tests/`. Future examples and domain profiles must be introduced through their
+own governed tickets.
