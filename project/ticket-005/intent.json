@@ -1,0 +1,85 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-005",
+  "summary": "Add core profiles and standards lock",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P1",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "project/ticket-005/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "profiles/**",
+    "schemas/dsl-manifest.schema.json",
+    "src/dsl_check.py",
+    "spec/DSL_STANDARD.md"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "550e5f441c709e15f2679c1af151352d1eba2f1e",
+    "targetBranch": "main",
+    "outcome": "Reusable closed DSL profiles, a cross-standard immutable lock, repository dogfooding and deterministic proportional publication tiers",
+    "nonGoals": [
+      "Do not grant execution authority to a DSL or language model",
+      "Do not merge, tag or publish a release",
+      "Do not modify sibling standard repositories from this ticket"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 30,
+    "budgets": {
+      "maxImplementationFiles": 5,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Keep domain documents and standard pins in closed schemas, with risk-derived publication tiers enforced by the dependency-free checker",
+      "components": [
+        {
+          "name": "normative-contracts",
+          "paths": [
+            "profiles/wellmanifest-profiles.schema.json",
+            "schemas/dsl-manifest.schema.json",
+            "spec/DSL_STANDARD.md"
+          ]
+        },
+        {
+          "name": "conformance-and-dogfooding",
+          "paths": ["profiles/dsl-manifest.json", "src/dsl_check.py"]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [
+        "Introduce wellmanifest.dsl/profile/*/v1 document variants",
+        "Introduce wellmanifest.standards-lock/v1"
+      ],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Remove the two new schemas and root manifest, then revert checker and standard changes."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-02",
+        "commands": [
+          "python3 src/dsl_check.py self-test",
+          "python3 src/dsl_check.py validate profiles/dsl-manifest.json"
+        ],
+        "evidence": "project/ticket-005/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-06",
+        "commands": ["./project/governance-check.sh --actor agent"],
+        "evidence": "project/ticket-005/ai-codex-logs.txt"
+      }
+    ]
+  }
+}
