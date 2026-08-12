@@ -8,9 +8,12 @@
   required deterministic CI checks and pinned Validator hand-off, then fixed
   protected post-merge repository-health validation in PR #4; verified on
   `main` by run `31321405881`.
-- [ ] Add domain profiles for intent/evidence, query/result, digital twin,
-  operation, authority, verification, and LLM exchange in subsequent scoped
-  tickets.
+- [x] [`ticket-005`](project/ticket-005/README.md) — add domain profiles for
+  typed source, intent/evidence, query/result, digital twin, operation,
+  authority, verification and LLM exchange; dogfood the manifest and add a
+  cross-standard lock plus proportional publication tiers.
+- [ ] Add POA to `standardsLock` only after its updated v1 contract is committed
+  at an immutable revision and its exact contract digest can be verified.
 - [ ] Publish reusable adoption guidance and mappings for existing DSL projects.
 - [ ] After the documentation/findings contract is merged, wire
   `dsl_check.py gate` into a protected required check and add a local pre-push

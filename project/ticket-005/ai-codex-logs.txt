@@ -1,0 +1,39 @@
+2026-08-12 ticket-005 validation
+
+$ python3 src/dsl_check.py validate profiles/dsl-manifest.json
+DSL-PASS: passed (0 errors)
+
+$ python3 src/dsl_check.py standards profiles/dsl-manifest.json
+DSL-PASS: passed (0 errors)
+
+$ python3 src/dsl_check.py self-test
+SELFTEST PASS: manifest, hash, LLM, path, ownership, help-page, finding-binding, publication-tier, evaluability, and critical-gate cases
+
+$ ./project/governance-check.sh --actor agent
+GOV-PASS: passed (0 errors, 0 warnings)
+
+2026-08-12 publication revalidation
+
+$ git diff --check
+exit=0
+
+$ python3 src/dsl_check.py validate profiles/dsl-manifest.json
+DSL-PASS: passed (0 errors)
+
+$ python3 src/dsl_check.py standards
+DSL-PASS: passed (0 errors)
+
+$ python3 src/dsl_check.py self-test
+SELFTEST PASS: manifest, hash, LLM, path, ownership, help-page, finding-binding, publication-tier, evaluability, and critical-gate cases
+
+$ ./project/governance-check.sh --actor agent
+GOV-PASS: passed (0 errors, 0 warnings)
+
+$ docker compose run --rm --build governance
+failed to create network dsl-ticket-005_default: Error response from daemon: all predefined address pools have been fully subnetted
+
+$ docker build -t wellmanifest-dsl-ticket-005-test .
+Successfully built image sha256:7589aa75473aaf6fc236f6703d6a7de9e4bd4c4dc229e10611b93390e8adbe0d
+
+$ docker run --rm --network none wellmanifest-dsl-ticket-005-test python3 .governance/governance_check.py --root . --actor agent <explicit ticket change set>
+GOV-PASS: passed (0 errors, 0 warnings)
