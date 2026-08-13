@@ -666,6 +666,7 @@ def validate_documentation(
     manifest_path: Path,
 ) -> dict[str, Any] | None:
     keys = {
+        "vocabularyKind",
         "commandRoot",
         "errorRoot",
         "criticalRoot",
@@ -676,6 +677,13 @@ def validate_documentation(
     item = check_object(value, keys, keys, "documentation", report, manifest_path)
     if item is None:
         return None
+    vocabulary_kind = item.get("vocabularyKind")
+    if vocabulary_kind not in {"commands", "documents"}:
+        report.error(
+            "DSL-DOC-001",
+            "documentation.vocabularyKind must be commands or documents",
+            manifest_path,
+        )
     roots = {
         "commandRoot": "docs",
         "errorRoot": "docs/ERROR",
@@ -693,7 +701,7 @@ def validate_documentation(
                 "documentation.commands",
                 report,
                 manifest_path,
-                nonempty=True,
+                nonempty=vocabulary_kind == "commands",
             ),
             COMMAND_NAME,
             "command",
@@ -761,6 +769,170 @@ def validate_documentation(
                 )
             validate_help_page(root, relative, name, kind, report)
     return item
+
+
+def required_publication_tier(manifest: dict[str, Any]) -> str:
+    semantics = manifest.get("semantics")
+    llm = manifest.get("llm")
+    conformance = manifest.get("conformance")
+    effect = semantics.get("effectModel") if isinstance(semantics, dict) else None
+    mode = llm.get("mode") if isinstance(llm, dict) else None
+    levels = conformance.get("levels", []) if isinstance(conformance, dict) else []
+    if effect == "controlled-effects":
+        return "controlled"
+    if (
+        effect in {"declarative-policy", "propose-only"}
+        or mode in {"input", "output", "bidirectional"}
+        or bool(set(levels) & {"runtime", "llm-boundary"})
+    ):
+        return "review"
+    return "basic"
+
+
+def validate_publication_policy(
+    value: Any, manifest: dict[str, Any], report: Report, path: Path
+) -> None:
+    keys = {
+        "declaredTier",
+        "deterministic",
+        "independentReview",
+        "externalAuthority",
+        "runtimeIsolation",
+    }
+    item = check_object(value, keys, keys, "publicationPolicy", report, path)
+    if item is None:
+        return
+    tier = item.get("declaredTier")
+    required = required_publication_tier(manifest)
+    if tier not in {"basic", "review", "controlled"}:
+        report.error("DSL-PUBLICATION-001", "publication tier is invalid", path)
+    elif tier != required:
+        report.error(
+            "DSL-PUBLICATION-001",
+            f"publication tier must equal the derived tier {required}",
+            path,
+        )
+    if item.get("deterministic") is not True:
+        report.error(
+            "DSL-PUBLICATION-001", "publication gate must be deterministic", path
+        )
+    if (
+        required in {"review", "controlled"}
+        and item.get("independentReview") is not True
+    ):
+        report.error(
+            "DSL-PUBLICATION-001",
+            f"{required} tier requires independent review",
+            path,
+        )
+    if required == "controlled" and (
+        item.get("externalAuthority") is not True
+        or item.get("runtimeIsolation") is not True
+    ):
+        report.error(
+            "DSL-PUBLICATION-001",
+            "controlled tier requires external authority and runtime isolation",
+            path,
+        )
+    for field in ("independentReview", "externalAuthority", "runtimeIsolation"):
+        if not isinstance(item.get(field), bool):
+            report.error(
+                "DSL-PUBLICATION-001",
+                f"publicationPolicy.{field} must be boolean",
+                path,
+            )
+
+
+def validate_standards_lock(value: Any, report: Report, path: Path) -> None:
+    lock = check_object(
+        value,
+        {"schema", "entries"},
+        {"schema", "entries"},
+        "standardsLock",
+        report,
+        path,
+    )
+    if lock is None:
+        return
+    if lock.get("schema") != "wellmanifest.standards-lock/v1":
+        report.error("DSL-LOCK-001", "standardsLock.schema is not supported", path)
+    entries = lock.get("entries")
+    if not isinstance(entries, list) or not 1 <= len(entries) <= 32:
+        report.error("DSL-LOCK-001", "standardsLock.entries is invalid", path)
+        return
+    standards: set[str] = set()
+    for index, raw in enumerate(entries):
+        fields = {"standard", "version", "repository", "revision", "contracts"}
+        entry = check_object(
+            raw, fields, fields, f"standardsLock.entries[{index}]", report, path
+        )
+        if entry is None:
+            continue
+        standard = entry.get("standard")
+        if not isinstance(standard, str) or STABLE_ID.fullmatch(standard) is None:
+            report.error(
+                "DSL-LOCK-001",
+                f"standardsLock.entries[{index}].standard is invalid",
+                path,
+            )
+        elif standard in standards:
+            report.error("DSL-LOCK-001", f"duplicate standard pin: {standard}", path)
+        else:
+            standards.add(standard)
+        version = entry.get("version")
+        if not isinstance(version, str) or SEMVER.fullmatch(version) is None:
+            report.error(
+                "DSL-LOCK-001",
+                f"standardsLock.entries[{index}].version is invalid",
+                path,
+            )
+        if not uri_is_valid(entry.get("repository")):
+            report.error(
+                "DSL-LOCK-001",
+                f"standardsLock.entries[{index}].repository is invalid",
+                path,
+            )
+        revision = entry.get("revision")
+        if not isinstance(revision, str) or REVISION.fullmatch(revision) is None:
+            report.error(
+                "DSL-LOCK-001",
+                f"standardsLock.entries[{index}].revision is invalid",
+                path,
+            )
+        contracts = entry.get("contracts")
+        if not isinstance(contracts, list) or not 1 <= len(contracts) <= 32:
+            report.error(
+                "DSL-LOCK-001",
+                f"standardsLock.entries[{index}].contracts is invalid",
+                path,
+            )
+            continue
+        refs: set[str] = set()
+        for contract_index, raw_contract in enumerate(contracts):
+            contract = check_object(
+                raw_contract,
+                {"ref", "digest"},
+                {"ref", "digest"},
+                f"standardsLock.entries[{index}].contracts[{contract_index}]",
+                report,
+                path,
+            )
+            if contract is None:
+                continue
+            reference = contract.get("ref")
+            if not uri_is_valid(reference):
+                report.error("DSL-LOCK-001", "standard contract ref is invalid", path)
+            elif reference in refs:
+                report.error(
+                    "DSL-LOCK-001", f"duplicate contract pin: {reference}", path
+                )
+            else:
+                refs.add(reference)
+            digest = contract.get("digest")
+            if not isinstance(digest, str) or DIGEST.fullmatch(digest) is None:
+                report.error(
+                    "DSL-LOCK-001", "standard contract digest is invalid", path
+                )
 
 
 def validate_finding_policy(
@@ -943,11 +1115,17 @@ def validate_manifest(
         "llm",
         "documentation",
         "findingPolicy",
+        "publicationPolicy",
         "conformance",
         "mappings",
     }
     manifest = check_object(
-        document, required, required | {"$schema"}, "manifest", report, manifest_path
+        document,
+        required,
+        required | {"$schema", "standardsLock"},
+        "manifest",
+        report,
+        manifest_path,
     )
     if manifest is None:
         return report, None
@@ -1026,6 +1204,11 @@ def validate_manifest(
     finding_policy = validate_finding_policy(
         manifest.get("findingPolicy"), report, manifest_path
     )
+    validate_publication_policy(
+        manifest.get("publicationPolicy"), manifest, report, manifest_path
+    )
+    if "standardsLock" in manifest:
+        validate_standards_lock(manifest.get("standardsLock"), report, manifest_path)
     validate_conformance(manifest.get("conformance"), root, report, manifest_path)
     validate_mappings(manifest.get("mappings"), report, manifest_path)
     return report, ValidatedManifest(
@@ -1683,6 +1866,7 @@ def valid_example_document(
             "strict": True,
         },
         "documentation": {
+            "vocabularyKind": "commands",
             "commandRoot": "docs",
             "errorRoot": "docs/ERROR",
             "criticalRoot": "docs/CRITICAL",
@@ -1698,6 +1882,13 @@ def valid_example_document(
             "requireEvaluable": True,
             "blockUnresolvedSecurity": True,
         },
+        "publicationPolicy": {
+            "declaredTier": "review",
+            "deterministic": True,
+            "independentReview": True,
+            "externalAuthority": False,
+            "runtimeIsolation": False,
+        },
         "conformance": {
             "levels": ["manifest"],
             "commands": ["python3 check.py"],
@@ -1705,6 +1896,23 @@ def valid_example_document(
             "invalidExamples": [],
         },
         "mappings": [],
+        "standardsLock": {
+            "schema": "wellmanifest.standards-lock/v1",
+            "entries": [
+                {
+                    "standard": "wellmanifest.new-project",
+                    "version": "1.0.0",
+                    "repository": "https://example.test/new-project",
+                    "revision": "b" * 40,
+                    "contracts": [
+                        {
+                            "ref": "schema://example.test/new-project/manifest/v1",
+                            "digest": "sha256:" + "1" * 64,
+                        }
+                    ],
+                }
+            ],
+        },
     }
 
 
@@ -1741,6 +1949,26 @@ def self_test() -> int:
         llm_report, _ = validate_manifest(manifest_path, root)
         if not llm_report.has_code("DSL-LLM-001"):
             failures.append("invalid LLM boundary was not rejected")
+
+        invalid_tier = json.loads(json.dumps(document))
+        invalid_tier["publicationPolicy"]["declaredTier"] = "basic"
+        manifest_path.write_text(
+            json.dumps(invalid_tier, indent=2) + "\n", encoding="utf-8"
+        )
+        tier_report, _ = validate_manifest(manifest_path, root)
+        if not tier_report.has_code("DSL-PUBLICATION-001"):
+            failures.append("understated publication tier was not rejected")
+
+        duplicate_lock = json.loads(json.dumps(document))
+        duplicate_lock["standardsLock"]["entries"].append(
+            duplicate_lock["standardsLock"]["entries"][0]
+        )
+        manifest_path.write_text(
+            json.dumps(duplicate_lock, indent=2) + "\n", encoding="utf-8"
+        )
+        lock_report, _ = validate_manifest(manifest_path, root)
+        if not lock_report.has_code("DSL-LOCK-001"):
+            failures.append("duplicate standards lock pin was not rejected")
 
         document["source"]["path"] = "../outside.dsl"
         manifest_path.write_text(
@@ -1897,7 +2125,7 @@ def self_test() -> int:
         return 1
     print(
         "SELFTEST PASS: manifest, hash, LLM, path, ownership, help-page, "
-        "finding-binding, evaluability, and critical-gate cases"
+        "finding-binding, publication-tier, evaluability, and critical-gate cases"
     )
     return 0
 
@@ -1953,6 +2181,20 @@ def command_gate(args: argparse.Namespace) -> int:
             for raw in args.findings
         ]
         report.extend(gate_findings(root, manifests, report_paths, revision))
+    print(report.render(args.format))
+    return 1 if report.failed else 0
+
+
+def command_standards(args: argparse.Namespace) -> int:
+    root = Path(args.root).resolve()
+    report, manifests = load_targets(args.targets or ["."], root)
+    locked = [item for item in manifests if "standardsLock" in item.document]
+    if not locked:
+        report.error(
+            "DSL-LOCK-001",
+            "aggregate standards conformance requires at least one standardsLock",
+            root,
+        )
     print(report.render(args.format))
     return 1 if report.failed else 0
 
@@ -2015,6 +2257,19 @@ def parser() -> argparse.ArgumentParser:
     )
     gate.add_argument("--format", choices=["text", "json"], default="text")
     gate.set_defaults(handler=command_gate)
+
+    standards = subparsers.add_parser(
+        "standards",
+        help="validate manifests, artifacts, publication tiers, and immutable standards locks",
+    )
+    standards.add_argument(
+        "targets",
+        nargs="*",
+        help="manifest files or directories; default: repository root",
+    )
+    standards.add_argument("--root", default=".", help="repository root")
+    standards.add_argument("--format", choices=["text", "json"], default="text")
+    standards.set_defaults(handler=command_standards)
 
     check = subparsers.add_parser(
         "self-test", help="run dependency-free validator regression cases"

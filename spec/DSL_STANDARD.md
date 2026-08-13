@@ -175,9 +175,14 @@ support period ends.
 
 ### 2.9 Discoverable commands, errors, and critical issues
 
-Every manifest MUST declare its complete public command vocabulary in
-`documentation.commands`. Command names MUST use uppercase ASCII with optional
-digits and underscores. Each command MUST have one exact, case-sensitive page:
+Every manifest MUST declare `documentation.vocabularyKind` as `commands` or
+`documents`. A command language MUST declare its complete public vocabulary in
+`documentation.commands`. A document-only language MAY use an empty command
+catalog; its JSON Schema variants and deterministic examples are its
+vocabulary. This exception MUST NOT be used to hide a parser or CLI command.
+
+Command names MUST use uppercase ASCII with optional digits and underscores.
+Each command MUST have one exact, case-sensitive page:
 
 ```text
 docs/<COMMAND>.md
@@ -233,6 +238,34 @@ deterministic adapter to the normalized report and remain evidence producers,
 not trust roots. Only the protected deterministic gate decides the publication
 verdict.
 
+### 2.11 Proportional publication tier
+
+Every manifest MUST declare `publicationPolicy`. The deterministic checker
+derives exactly one tier; a repository cannot select a lower or higher tier:
+
+| Tier | Derived condition | Additional required controls |
+| --- | --- | --- |
+| `basic` | descriptive semantics, no LLM boundary, no runtime claim | deterministic conformance |
+| `review` | declarative/propose-only semantics, any LLM boundary, or runtime/LLM conformance | independent review |
+| `controlled` | controlled effects | independent review, external authority, runtime isolation |
+
+An LLM finding MAY add evidence or block publication through `findingPolicy`.
+It MUST NOT reduce the derived tier or replace its deterministic controls.
+
+### 2.12 Composed-standard lock
+
+A manifest that composes other standards SHOULD include the closed
+`wellmanifest.standards-lock/v1` object defined at
+`schemas/dsl-manifest.schema.json#/$defs/standardsLock`. Every entry binds a
+standard identifier and SemVer to a repository, exact 40-character Git revision
+and one or more URI contract references with SHA-256 digests. Tags, branches,
+working-tree paths and draft files without an immutable revision are forbidden
+as lock substitutes.
+
+The same standard ID and contract reference MUST appear at most once in a lock.
+A draft standard is omitted until an immutable revision exists; its absence
+must remain a visible integration prerequisite rather than a fabricated pin.
+
 ## 3. Manifest location
 
 The default filename is `dsl-manifest.json`. A monorepo MAY contain multiple
@@ -243,6 +276,8 @@ manifest file. Absolute paths and `..` segments are forbidden.
 
 The authoritative JSON Schema is
 [`schemas/dsl-manifest.schema.json`](../schemas/dsl-manifest.schema.json).
+The first reusable document-profile contract is
+[`profiles/wellmanifest-profiles.schema.json`](../profiles/wellmanifest-profiles.schema.json).
 
 ## 4. Conformance levels
 
@@ -265,6 +300,7 @@ For every new or changed DSL, CI MUST run:
 
 ```bash
 python3 src/dsl_check.py validate <manifest-or-repository>
+python3 src/dsl_check.py standards <manifest-or-repository>
 python3 src/dsl_check.py changes --root . --base <accepted-base> --head <head>
 python3 src/dsl_check.py gate --root . --findings <producer-report.json>
 ```
@@ -282,11 +318,14 @@ The gate checks:
 4. unique ownership of changed DSL-sensitive files;
 5. presence of changed contract artifacts in the owner manifest;
 6. LLM and authority invariants;
-7. exact command, error, and critical help paths, titles, sections, ownership,
+7. command/document vocabulary mode plus exact command, error, and critical
+   help paths, titles, sections, ownership,
    and digests;
-8. normalized finding structure and repository/revision binding;
-9. presence and evaluability of every required producer;
-10. absence of unresolved blocking or security findings.
+8. the publication tier derived from effects, LLM mode and conformance claims;
+9. immutable, unique standard and contract pins when a standards lock exists;
+10. normalized finding structure and repository/revision binding;
+11. presence and evaluability of every required producer;
+12. absence of unresolved blocking or security findings.
 
 The `gate` command resolves the gated revision from Git `HEAD`. A protected
 Git-free environment MUST pass the exact revision with `--revision`; the
@@ -395,6 +434,7 @@ bytes and declares the required vocabulary and finding policy:
     "strict": true
   },
   "documentation": {
+    "vocabularyKind": "commands",
     "commandRoot": "docs",
     "errorRoot": "docs/ERROR",
     "criticalRoot": "docs/CRITICAL",
@@ -414,6 +454,13 @@ bytes and declares the required vocabulary and finding policy:
     "requireEvaluable": true,
     "blockUnresolvedSecurity": true
   },
+  "publicationPolicy": {
+    "declaredTier": "review",
+    "deterministic": true,
+    "independentReview": true,
+    "externalAuthority": false,
+    "runtimeIsolation": false
+  },
   "conformance": {
     "levels": ["manifest", "contract", "runtime"],
     "commands": ["./project/governance-check.sh --actor agent"],
@@ -430,20 +477,26 @@ separate ticket that creates and digest-binds every declared command page,
 declares the producer's stable error/critical catalog, adds those pages to
 `artifacts`, and recomputes every digest at the accepted repository revision.
 
-## 7. Profile evolution
+## 7. Reusable profile family
 
-Domain profiles SHOULD extend the kernel instead of copying it. Initial profile
-candidates include:
+Domain profiles SHOULD extend the kernel instead of copying it. The closed
+Draft 2020-12 contract in `profiles/wellmanifest-profiles.schema.json` defines:
 
 - source and provenance;
 - intent and evidence;
-- query and query-result;
-- twin definition, observation, and state;
-- plan and proposal;
-- authority and capability;
-- operation and execution;
-- verification and receipt;
-- LLM exchange request and response.
+- query and terminal result;
+- read-only, freshness-bounded observation;
+- operation with multi-dimensional effects;
+- external, plan-bound authority;
+- verification with immutable evidence;
+- terminal LLM exchange audit with application, project, provider, model and
+  account profile identity.
 
-Each profile remains independently versioned and maps to external standards
-where appropriate.
+Authored query objects intentionally do not select an account, provider or
+model. The trusted registry owns that choice; the terminal LLM exchange records
+what was actually used. Streaming deltas are telemetry artifacts. A terminal
+result remains a separately schema-validated and hash-bound artifact.
+
+Each profile variant is independently named, closed, bounded and versioned.
+Schema validity is evidence only: no profile document grants execution
+authority by itself.

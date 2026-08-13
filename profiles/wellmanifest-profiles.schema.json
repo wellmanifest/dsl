@@ -1,0 +1,356 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wellmanifest.dev/schemas/dsl/profiles/v1",
+  "title": "Wellmanifest reusable typed document profiles v1",
+  "description": "Closed data contracts for source, intent/evidence, query/result, observation, operation, authority, verification and LLM exchange boundaries. Validity never grants execution authority.",
+  "oneOf": [
+    {"$ref": "#/$defs/source"},
+    {"$ref": "#/$defs/intentEvidence"},
+    {"$ref": "#/$defs/query"},
+    {"$ref": "#/$defs/result"},
+    {"$ref": "#/$defs/observation"},
+    {"$ref": "#/$defs/operation"},
+    {"$ref": "#/$defs/authority"},
+    {"$ref": "#/$defs/verification"},
+    {"$ref": "#/$defs/llmExchange"}
+  ],
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[a-z][a-z0-9._:-]*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "sha256Ref": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "artifactRef": {
+      "type": "string",
+      "maxLength": 320,
+      "pattern": "^artifact://[a-z0-9.-]+/[A-Za-z0-9._:/-]+/r[1-9][0-9]*$"
+    },
+    "schemaRef": {
+      "type": "string",
+      "maxLength": 320,
+      "pattern": "^schema://[a-z0-9.-]+/[A-Za-z0-9._:/-]+/v[1-9][0-9]*$"
+    },
+    "projectRef": {
+      "type": "string",
+      "maxLength": 240,
+      "pattern": "^project://[a-z0-9.-]+/[A-Za-z0-9._:/-]+$"
+    },
+    "targetRef": {
+      "type": "string",
+      "maxLength": 240,
+      "pattern": "^target://[a-z0-9.-]+/[A-Za-z0-9._:/-]+$"
+    },
+    "capabilityRef": {
+      "type": "string",
+      "maxLength": 240,
+      "pattern": "^capability://[a-z0-9.-]+/[a-z][a-z0-9._:/-]*/v[1-9][0-9]*$"
+    },
+    "effect": {
+      "enum": [
+        "read_data",
+        "local_write",
+        "external_write",
+        "credential_use",
+        "quota_consumption",
+        "remote_session",
+        "destructive"
+      ]
+    },
+    "effects": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/effect"}
+    },
+    "artifactRefs": {
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/artifactRef"}
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "revision", "path"],
+      "properties": {
+        "repository": {"type": "string", "format": "uri", "maxLength": 320},
+        "revision": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 320,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "source_id",
+        "language",
+        "media_type",
+        "content_ref",
+        "content_sha256",
+        "provenance"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/source/v1"},
+        "source_id": {"$ref": "#/$defs/stableId"},
+        "language": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 35,
+          "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$"
+        },
+        "media_type": {"type": "string", "pattern": "^[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+$"},
+        "content_ref": {"$ref": "#/$defs/artifactRef"},
+        "content_sha256": {"$ref": "#/$defs/sha256"},
+        "provenance": {"$ref": "#/$defs/provenance"}
+      }
+    },
+    "intentEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "intent_id",
+        "statement_ref",
+        "statement_sha256",
+        "evidence_refs",
+        "authority_requested"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/intent-evidence/v1"},
+        "intent_id": {"$ref": "#/$defs/stableId"},
+        "statement_ref": {"$ref": "#/$defs/artifactRef"},
+        "statement_sha256": {"$ref": "#/$defs/sha256"},
+        "evidence_refs": {"$ref": "#/$defs/artifactRefs"},
+        "authority_requested": {"const": false}
+      }
+    },
+    "query": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "operation",
+        "query_id",
+        "application_id",
+        "project_ref",
+        "source_ref",
+        "source_sha256",
+        "result_schema_ref",
+        "stream_requested"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/query/v1"},
+        "operation": {"const": "query"},
+        "query_id": {"$ref": "#/$defs/stableId"},
+        "application_id": {"$ref": "#/$defs/stableId"},
+        "project_ref": {"$ref": "#/$defs/projectRef"},
+        "source_ref": {"$ref": "#/$defs/artifactRef"},
+        "source_sha256": {"$ref": "#/$defs/sha256"},
+        "result_schema_ref": {"$ref": "#/$defs/schemaRef"},
+        "stream_requested": {"type": "boolean"}
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "query_id",
+        "state",
+        "result_ref",
+        "result_sha256",
+        "result_schema_ref",
+        "terminal",
+        "stream_complete",
+        "citation_refs"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/result/v1"},
+        "query_id": {"$ref": "#/$defs/stableId"},
+        "state": {"enum": ["succeeded", "failed", "cancelled", "timed_out", "denied", "expired"]},
+        "result_ref": {"$ref": "#/$defs/artifactRef"},
+        "result_sha256": {"$ref": "#/$defs/sha256"},
+        "result_schema_ref": {"$ref": "#/$defs/schemaRef"},
+        "terminal": {"const": true},
+        "stream_complete": {"type": "boolean"},
+        "citation_refs": {"$ref": "#/$defs/artifactRefs"}
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "observation_id",
+        "target_ref",
+        "observed_at",
+        "valid_until",
+        "facts_ref",
+        "facts_sha256",
+        "facts_schema_ref",
+        "read_only"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/observation/v1"},
+        "observation_id": {"$ref": "#/$defs/stableId"},
+        "target_ref": {"$ref": "#/$defs/targetRef"},
+        "observed_at": {"type": "string", "format": "date-time", "maxLength": 40},
+        "valid_until": {"type": "string", "format": "date-time", "maxLength": 40},
+        "facts_ref": {"$ref": "#/$defs/artifactRef"},
+        "facts_sha256": {"$ref": "#/$defs/sha256"},
+        "facts_schema_ref": {"$ref": "#/$defs/schemaRef"},
+        "read_only": {"const": true}
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "operation_id",
+        "capability_ref",
+        "effects",
+        "input_ref",
+        "input_sha256",
+        "authority_required"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/operation/v1"},
+        "operation_id": {"$ref": "#/$defs/stableId"},
+        "capability_ref": {"$ref": "#/$defs/capabilityRef"},
+        "effects": {"$ref": "#/$defs/effects"},
+        "input_ref": {"$ref": "#/$defs/artifactRef"},
+        "input_sha256": {"$ref": "#/$defs/sha256"},
+        "authority_required": {"type": "boolean"}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "effects": {
+                "contains": {
+                  "enum": ["external_write", "credential_use", "quota_consumption", "remote_session", "destructive"]
+                }
+              }
+            },
+            "required": ["effects"]
+          },
+          "then": {"properties": {"authority_required": {"const": true}}}
+        }
+      ]
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "authority_id",
+        "issuer",
+        "subject",
+        "scopes",
+        "plan_ref",
+        "expires_at",
+        "model_issued"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/authority/v1"},
+        "authority_id": {"$ref": "#/$defs/stableId"},
+        "issuer": {"type": "string", "minLength": 1, "maxLength": 160},
+        "subject": {"type": "string", "minLength": 1, "maxLength": 160},
+        "scopes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "plan_ref": {"$ref": "#/$defs/sha256Ref"},
+        "expires_at": {"type": "string", "format": "date-time", "maxLength": 40},
+        "model_issued": {"const": false}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "verification_id",
+        "subject_ref",
+        "subject_sha256",
+        "verifier",
+        "verdict",
+        "evidence_refs"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/verification/v1"},
+        "verification_id": {"$ref": "#/$defs/stableId"},
+        "subject_ref": {"$ref": "#/$defs/artifactRef"},
+        "subject_sha256": {"$ref": "#/$defs/sha256"},
+        "verifier": {"type": "string", "minLength": 1, "maxLength": 160},
+        "verdict": {"enum": ["pass", "fail", "unknown"]},
+        "evidence_refs": {"$ref": "#/$defs/artifactRefs"}
+      }
+    },
+    "llmExchange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "request_id",
+        "application_id",
+        "project_ref",
+        "source_ref",
+        "source_sha256",
+        "provider_id",
+        "model_id",
+        "account_profile_id",
+        "result_ref",
+        "result_sha256",
+        "result_schema_ref",
+        "terminal_state",
+        "stream_artifact_ref",
+        "raw_prompt_included",
+        "secret_material_included"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/llm-exchange/v1"},
+        "request_id": {"$ref": "#/$defs/stableId"},
+        "application_id": {"$ref": "#/$defs/stableId"},
+        "project_ref": {"$ref": "#/$defs/projectRef"},
+        "source_ref": {"$ref": "#/$defs/artifactRef"},
+        "source_sha256": {"$ref": "#/$defs/sha256"},
+        "provider_id": {"$ref": "#/$defs/stableId"},
+        "model_id": {"type": "string", "minLength": 1, "maxLength": 160},
+        "account_profile_id": {"$ref": "#/$defs/stableId"},
+        "result_ref": {"$ref": "#/$defs/artifactRef"},
+        "result_sha256": {"$ref": "#/$defs/sha256"},
+        "result_schema_ref": {"$ref": "#/$defs/schemaRef"},
+        "terminal_state": {"enum": ["succeeded", "failed", "cancelled", "timed_out", "denied", "expired"]},
+        "stream_artifact_ref": {
+          "oneOf": [
+            {"$ref": "#/$defs/artifactRef"},
+            {"type": "null"}
+          ]
+        },
+        "raw_prompt_included": {"const": false},
+        "secret_material_included": {"const": false}
+      }
+    }
+  }
+}

@@ -23,6 +23,7 @@
     "llm",
     "documentation",
     "findingPolicy",
+    "publicationPolicy",
     "conformance",
     "mappings"
   ],
@@ -68,7 +69,9 @@
     "llm": {"$ref": "#/$defs/llm"},
     "documentation": {"$ref": "#/$defs/documentation"},
     "findingPolicy": {"$ref": "#/$defs/findingPolicy"},
+    "publicationPolicy": {"$ref": "#/$defs/publicationPolicy"},
     "conformance": {"$ref": "#/$defs/conformance"},
+    "standardsLock": {"$ref": "#/$defs/standardsLock"},
     "mappings": {
       "type": "array",
       "uniqueItems": true,
@@ -288,6 +291,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "vocabularyKind",
         "commandRoot",
         "errorRoot",
         "criticalRoot",
@@ -296,12 +300,12 @@
         "criticalCodes"
       ],
       "properties": {
+        "vocabularyKind": {"enum": ["commands", "documents"]},
         "commandRoot": {"const": "docs"},
         "errorRoot": {"const": "docs/ERROR"},
         "criticalRoot": {"const": "docs/CRITICAL"},
         "commands": {
           "type": "array",
-          "minItems": 1,
           "uniqueItems": true,
           "items": {"$ref": "#/$defs/commandName"}
         },
@@ -315,7 +319,16 @@
           "uniqueItems": true,
           "items": {"$ref": "#/$defs/findingCode"}
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"vocabularyKind": {"const": "commands"}},
+            "required": ["vocabularyKind"]
+          },
+          "then": {"properties": {"commands": {"minItems": 1}}}
+        }
+      ]
     },
     "findingPolicy": {
       "type": "object",
@@ -351,6 +364,85 @@
         },
         "requireEvaluable": {"const": true},
         "blockUnresolvedSecurity": {"const": true}
+      }
+    },
+    "publicationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "declaredTier",
+        "deterministic",
+        "independentReview",
+        "externalAuthority",
+        "runtimeIsolation"
+      ],
+      "properties": {
+        "declaredTier": {"enum": ["basic", "review", "controlled"]},
+        "deterministic": {"const": true},
+        "independentReview": {"type": "boolean"},
+        "externalAuthority": {"type": "boolean"},
+        "runtimeIsolation": {"type": "boolean"}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"declaredTier": {"enum": ["review", "controlled"]}},
+            "required": ["declaredTier"]
+          },
+          "then": {"properties": {"independentReview": {"const": true}}}
+        },
+        {
+          "if": {
+            "properties": {"declaredTier": {"const": "controlled"}},
+            "required": ["declaredTier"]
+          },
+          "then": {
+            "properties": {
+              "externalAuthority": {"const": true},
+              "runtimeIsolation": {"const": true}
+            }
+          }
+        }
+      ]
+    },
+    "standardsLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "entries"],
+      "properties": {
+        "schema": {"const": "wellmanifest.standards-lock/v1"},
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {"$ref": "#/$defs/standardPin"}
+        }
+      }
+    },
+    "standardPin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["standard", "version", "repository", "revision", "contracts"],
+      "properties": {
+        "standard": {"$ref": "#/$defs/stableId"},
+        "version": {"$ref": "#/$defs/semver"},
+        "repository": {"type": "string", "format": "uri"},
+        "revision": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "contracts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {"$ref": "#/$defs/contractPin"}
+        }
+      }
+    },
+    "contractPin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "digest"],
+      "properties": {
+        "ref": {"type": "string", "format": "uri"},
+        "digest": {"$ref": "#/$defs/digest"}
       }
     },
     "findingsReport": {
