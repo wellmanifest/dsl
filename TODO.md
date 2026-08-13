@@ -12,6 +12,8 @@
   typed source, intent/evidence, query/result, digital twin, operation,
   authority, verification and LLM exchange; dogfood the manifest and add a
   cross-standard lock plus proportional publication tiers.
+  `ifuri-validator-agent` approved and merged
+  `94fe47e4440f45f1295476af2b1bbda6296a0152`.
 - [ ] Add POA to `standardsLock` only after its updated v1 contract is committed
   at an immutable revision and its exact contract digest can be verified.
 - [ ] Publish reusable adoption guidance and mappings for existing DSL projects.
