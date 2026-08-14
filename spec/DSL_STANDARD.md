@@ -266,6 +266,34 @@ The same standard ID and contract reference MUST appear at most once in a lock.
 A draft standard is omitted until an immutable revision exists; its absence
 must remain a visible integration prerequisite rather than a fabricated pin.
 
+### 2.13 Grammar and parser implementation profiles
+
+A grammar notation or parser library is not the identity of a DSL. A language
+MUST keep these layers separately reviewable:
+
+1. canonical grammar and normative semantics;
+2. optional generation projection such as request-only GBNF;
+3. parser implementation or generated parser;
+4. AST adapter producing the canonical, closed model;
+5. semantic validation and deterministic conformance;
+6. runtime effects behind the declared authority boundary.
+
+ABNF, EBNF, PEG or another grammar may be the normative syntax artifact. A
+library-specific grammar MUST be declared as a `grammar`, `parser-contract` or
+projection unless it is itself the canonical source. Generated parser code
+MUST be reproducible and digest-bound. Replacing Lark with TatSu, pest with
+ANTLR, or nearley with Ohm is compatible only when both implementations accept
+the same valid fixtures, reject the same invalid fixtures with equivalent
+stable diagnostics, and normalize to the same canonical representation.
+
+Runtime grammar compilation is an implementation capability, not authority to
+change the language. A grammar proposed by an LLM MUST remain an untrusted
+candidate until its own schema/grammar checks, ambiguity and complexity bounds,
+conformance suite and independent review pass. GBNF constrains model output; it
+does not replace the full parser grammar or the closed output schema. MCP is a
+transport for these artifacts and validation operations, not a semantic or
+approval layer.
+
 ## 3. Manifest location
 
 The default filename is `dsl-manifest.json`. A monorepo MAY contain multiple
@@ -335,16 +363,20 @@ for every producer/manifest pair.
 
 Stable diagnostic codes are part of the conformance interface.
 
-## 6. Worked profile: `new-project/CONTRIBUTING.md`
+## 6. Worked composition: `new-project/CONTRIBUTING.md`
 
 `wellmanifest/new-project/CONTRIBUTING.md` is an embedded declarative
-Policy/Procedure DSL and is the first worked profile of this standard.
+Policy/Procedure DSL and is the first worked composition of this standard. Its
+language contract is `wellmanifest.policy/v1`, with `policy-sh@1` retained as a
+runtime compatibility alias. The integer below is the consuming document
+revision and MUST NOT be compared to the Policy DSL language major or manifest
+SemVer.
 
 Its observed document contract declares:
 
 ```dsl
 DOCUMENT CONTRIBUTING
-VERSION 9
+VERSION 13
 LANGUAGE PL
 MODE PROCEDURAL
 PURPOSE "proces pracy nad repozytorium"
@@ -363,12 +395,21 @@ STATE, TRANSITION
 ```
 
 The DSL is declarative and is not executed as arbitrary code. Markdown fences
-are the normative human/agent representation; deterministic Python governance
-validation is a separate enforcement adapter. Therefore its effect model is
-`declarative-policy`, not `controlled-effects`.
+are the normative human/agent representation; `wellmanifest/policy-dsl`
+defines their grammar, closed Policy IR, constrained LLM projection and shared
+conformance fixtures. Deterministic Python governance validation is a separate
+enforcement adapter. Therefore its effect model is `declarative-policy`, not
+`controlled-effects`.
 
-At the locally inspected revision, the document contains 23 `dsl` fences and
-92 stable lines beginning with `RULE`. Of those declarations, 90 are inside
+Its `ENV_FILE`, `VARIABLE` and `SECRET` records are a legacy compatibility
+surface. They are neither an extension nor an implementation of Env DSL 1.
+Env DSL has a closed assignment grammar, headers, layering and bounded
+expression evaluator. A conforming Env DSL runtime may produce inert values
+which a typed adapter supplies to the Policy DSL runtime; neither language
+inherits the other's grammar or authority.
+
+At the pinned `new-project` v0.18.0 revision, the document contains 25 `dsl`
+fences and 110 stable lines beginning with `RULE`. Of those declarations, 108 are inside
 the selected `dsl` fences; `C-CONTEXT-001` and `C-CONTEXT-002` are inside a
 `bash` fence and are therefore not selected by `fenced-code:dsl`. This existing
 label mismatch is recorded rather than silently broadening the selector to all
@@ -381,7 +422,7 @@ bytes and declares the required vocabulary and finding policy:
   "schema": "wellmanifest.dsl/manifest/v1",
   "id": "wellmanifest.new-project.contributing",
   "name": "new-project CONTRIBUTING Policy/Procedure DSL",
-  "version": "9.0.0",
+  "version": "13.0.0",
   "status": "stable",
   "purpose": "Governed contributor and autonomous-agent workflow",
   "domain": "software-governance",
@@ -395,7 +436,7 @@ bytes and declares the required vocabulary and finding policy:
   "source": {
     "repository": "https://github.com/wellmanifest/new-project",
     "path": "CONTRIBUTING.md",
-    "declaredVersion": "9",
+    "declaredVersion": "13",
     "canonical": "markdown-embedded",
     "mediaType": "text/markdown",
     "selectors": ["fenced-code:dsl"]
@@ -405,7 +446,7 @@ bytes and declares the required vocabulary and finding policy:
     {
       "path": "CONTRIBUTING.md",
       "role": "normative-source",
-      "digest": "sha256:6ce6b04093fd2f059dee3064d33f43648cb9404222c8aa7984b422d693c8214b"
+      "digest": "sha256:d39b4ad8ac060f918dd6906ec484cb0e134777c9e17fecc0c4b1b464df50d34b"
     }
   ],
   "namespaces": [
@@ -434,15 +475,11 @@ bytes and declares the required vocabulary and finding policy:
     "strict": true
   },
   "documentation": {
-    "vocabularyKind": "commands",
+    "vocabularyKind": "documents",
     "commandRoot": "docs",
     "errorRoot": "docs/ERROR",
     "criticalRoot": "docs/CRITICAL",
-    "commands": [
-      "DOCUMENT", "VERSION", "LANGUAGE", "MODE", "PURPOSE", "POLICY",
-      "ENV_FILE", "VARIABLE", "SECRET", "RULE", "TYPE", "WHEN", "DO",
-      "REQUIRE", "ALLOW", "FORBID", "ASSERT", "NEXT", "STATE", "TRANSITION"
-    ],
+    "commands": [],
     "errorCodes": [],
     "criticalCodes": []
   },
@@ -467,15 +504,29 @@ bytes and declares the required vocabulary and finding policy:
     "validExamples": [],
     "invalidExamples": []
   },
-  "mappings": []
+  "mappings": [
+    {
+      "standard": "wellmanifest/policy-dsl",
+      "version": "0.1.0-dev",
+      "relation": "implements",
+      "uri": "https://github.com/wellmanifest/policy-dsl"
+    },
+    {
+      "standard": "wellmanifest/env-dsl",
+      "version": "0.1.0-dev",
+      "relation": "compatible-with",
+      "uri": "https://github.com/wellmanifest/env-dsl"
+    }
+  ]
 }
 ```
 
-This candidate describes the existing language; it does not claim that
-`new-project` has already adopted or passed the manifest. Adoption requires a
-separate ticket that creates and digest-binds every declared command page,
-declares the producer's stable error/critical catalog, adds those pages to
-`artifacts`, and recomputes every digest at the accepted repository revision.
+This candidate describes the consuming profile; it does not transfer language
+ownership away from `policy-dsl` or claim that `new-project` has adopted this
+manifest. Adoption requires a target-owned ticket, immutable Policy DSL
+revision, exact artifact digests and deterministic carrier validation. The two
+policy-shaped rules still labelled as `bash` remain a source-label defect to be
+fixed by `new-project`, not a reason to interpret arbitrary shell fences.
 
 ## 7. Reusable profile family
 

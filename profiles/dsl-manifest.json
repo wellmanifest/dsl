@@ -31,6 +31,7 @@
   "ownedPaths": [
     "profiles/dsl-manifest.json",
     "profiles/**",
+    "docs/**",
     "schemas/dsl-manifest.schema.json",
     "spec/DSL_STANDARD.md",
     "src/dsl_check.py"
@@ -49,7 +50,12 @@
     {
       "path": "spec/DSL_STANDARD.md",
       "role": "documentation",
-      "digest": "sha256:2dfb09b5689289c3ad096057ca1dc2f19512639e3662188dd6c5ee25e4e8c53b"
+      "digest": "sha256:4fc62b35f0986eb0c5ccb4fc506aad193123572dc63a158ddb157172fbe73eeb"
+    },
+    {
+      "path": "docs/GRAMMAR_TOOLCHAINS.md",
+      "role": "documentation",
+      "digest": "sha256:1868f45084253624c5bbae71fc54638a3fca2ffd86b5121cb927f5673872cf9b"
     },
     {
       "path": "src/dsl_check.py",
@@ -122,15 +128,27 @@
   "mappings": [
     {
       "standard": "wellmanifest/new-project",
-      "version": "0.16.2",
+      "version": "0.18.0",
       "relation": "compatible-with",
       "uri": "https://github.com/wellmanifest/new-project"
     },
     {
       "standard": "wellmanifest/poa",
-      "version": "0.1.0-draft",
+      "version": "0.1.0",
       "relation": "maps-to",
       "uri": "https://github.com/wellmanifest/poa"
+    },
+    {
+      "standard": "wellmanifest/policy-dsl",
+      "version": "0.1.0-dev",
+      "relation": "compatible-with",
+      "uri": "https://github.com/wellmanifest/policy-dsl"
+    },
+    {
+      "standard": "wellmanifest/env-dsl",
+      "version": "0.1.0-dev",
+      "relation": "compatible-with",
+      "uri": "https://github.com/wellmanifest/env-dsl"
     }
   ],
   "standardsLock": {
@@ -138,13 +156,29 @@
     "entries": [
       {
         "standard": "wellmanifest.new-project",
-        "version": "0.16.2",
+        "version": "0.18.0",
         "repository": "https://github.com/wellmanifest/new-project",
-        "revision": "452d4008a71d67ad1965f6042faa217978a82b42",
+        "revision": "769183ca27593af1d166acee11bc9e37decf9870",
         "contracts": [
           {
             "ref": "schema://wellmanifest.dev/new-project/governance/v2",
-            "digest": "sha256:d48f258e3397ac2d8c5010e5ccdeef9eaf87b0b015d56798d11d5916c5f70a18"
+            "digest": "sha256:40b63b86b4503fe0c3801c93b315ec4c400795ea59b49834a4797787f01857c2"
+          }
+        ]
+      },
+      {
+        "standard": "wellmanifest.poa",
+        "version": "0.1.0",
+        "repository": "https://github.com/wellmanifest/poa",
+        "revision": "8424a7f5c977915ee08404b8b82d63e0f5e44ea2",
+        "contracts": [
+          {
+            "ref": "https://github.com/wellmanifest/poa/blob/8424a7f5c977915ee08404b8b82d63e0f5e44ea2/standard/poa-process.schema.v1.json",
+            "digest": "sha256:9222fbe9aded60df6d3c0b39b7a4a89b8ad627f122349e909fdfba44047669ab"
+          },
+          {
+            "ref": "https://github.com/wellmanifest/poa/blob/8424a7f5c977915ee08404b8b82d63e0f5e44ea2/standard/poa-process.v1.gbnf",
+            "digest": "sha256:d13d736cc3f4e07dd9366378183055ff0d9ad10dd4fc5bf1f322e2dc37d919ee"
           }
         ]
       }
