@@ -8,3 +8,9 @@ SETUP_PYTHON_V7_0_0=5fda3b95a4ea91299a34e894583c3862153e4b97
 SCOPE=.github/workflows/ci.yml
 STATE=IN_PROGRESS/EDIT
 AUTHORIZATION=user repeatedly instructed "kontynuuj"
+
+[2026-08-14 plan-correction]
+GOVERNANCE_INITIAL=GOV-DELIVERY-001
+CAUSE=estimatedMinutes 20 exceeds XS limit 10
+CORRECTION=complexity XS -> S
+SCOPE_CHANGE=none

@@ -39,7 +39,7 @@
       "Change workflow triggers, permissions, job names, Python version, or validation logic",
       "Add dependencies, releases, branch-protection changes, or automatic merge"
     ],
-    "complexity": "XS",
+    "complexity": "S",
     "estimatedMinutes": 20,
     "budgets": {
       "maxImplementationFiles": 1,
