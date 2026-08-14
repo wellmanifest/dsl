@@ -10,3 +10,8 @@
 - Distinguished document vocabularies from command vocabularies.
 - Corrected the recorded manifest validation path, revalidated the complete
   contract and moved the bounded ticket to PR publication.
+
+## 2026-08-13 publication
+
+- Closed after `ifuri-validator-agent` approved and merged pull request #8 at
+  `94fe47e4440f45f1295476af2b1bbda6296a0152`.
