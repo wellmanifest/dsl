@@ -71,8 +71,23 @@ Evidence inspected before planning:
 - Recorded the user's explicit follow-up approval to execute, repair version
   inconsistencies and continue. The ticket moved to `IN_PROGRESS / EDIT`.
 - No standard, documentation, schema, parser or sibling-repository file has
-  yet been changed in this implementation phase.
+  been changed outside this ticket's three allowed implementation paths.
+- Added normative separation of grammar, safe generation projection, parser,
+  AST adapter, semantic validation and authority-owning runtime.
+- Added the verified toolchain matrix and LLM/GBNF/MCP/POA flow. The Env DSL
+  example passed the actual dependency-free Env DSL 1 parser.
+- Updated the worked `new-project` composition from stale document revision 9
+  to revision 13 and separated it from Policy DSL language v1 and the
+  `policy-sh@1` runtime alias.
+- Updated the manifest digests and composition metadata. It now pins published
+  `new-project 0.18.0` and `POA 0.1.0` contracts exactly; experimental local
+  Env DSL and Policy DSL are mappings only, not fabricated immutable locks.
+- All deterministic DSL/governance tests and the networkless Docker self-test
+  pass. Docker Compose built the image; this host's Compose lacks `run
+  --network`, so isolation was verified with explicit `docker run --network
+  none` against that image.
 
 ## Blockers
 
-- None inside the approved scope.
+- None inside the approved scope; implementation is ready for protected
+  publication and exact-head independent review.

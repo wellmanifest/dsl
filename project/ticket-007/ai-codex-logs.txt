@@ -16,3 +16,36 @@ USER_REQUEST="execute, repair inconsistent DSL revisions, continue"
 SESSION_EXECUTION_AUTHORIZATION=RECORDED
 STATUS=IN_PROGRESS
 WORKFLOW_STATE=EDIT
+
+2026-08-14 implementation validation
+
+$ Env DSL parse_text(example from docs/GRAMMAR_TOOLCHAINS.md)
+ENV-DSL-EXAMPLE-PASS
+
+$ python3 src/dsl_check.py self-test
+SELFTEST PASS: manifest, hash, LLM, path, ownership, help-page, finding-binding, publication-tier, evaluability, and critical-gate cases
+
+$ python3 src/dsl_check.py validate profiles/dsl-manifest.json
+DSL-PASS: passed (0 errors)
+
+$ python3 src/dsl_check.py standards profiles/dsl-manifest.json
+DSL-PASS: passed (0 errors)
+
+$ ./project/governance-check.sh --actor agent
+GOV-PASS: passed (0 errors, 0 warnings)
+
+$ docker compose build
+governance Built
+
+$ docker compose run --rm --network none dsl-check self-test
+unknown flag: --network
+
+The installed Compose has no `run --network` flag and the declared service is
+`governance`, not `dsl-check`; the equivalent isolated image check followed.
+
+$ docker run --rm --network none wellmanifest-dsl-parser-standardlbgzzo-governance:latest python3 src/dsl_check.py self-test
+SELFTEST PASS: manifest, hash, LLM, path, ownership, help-page, finding-binding, publication-tier, evaluability, and critical-gate cases
+
+IMPLEMENTATION_FILES=3
+RUNTIME_DEPENDENCIES=0
+IMPLEMENTATION_COMMIT=f95bf1a

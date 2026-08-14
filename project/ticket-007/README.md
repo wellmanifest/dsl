@@ -3,7 +3,7 @@
 - **ID**: ticket-007
 - **Owner**: unresolved:human
 - **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Workflow state**: PUBLICATION
 - **Created**: 2026-08-14
 
 ## Goal and scope
@@ -24,21 +24,21 @@ against the normative Env DSL grammar and semantics.
 
 - [x] AC-01: The user explicitly approved implementation and then requested
   continuation plus repair of revision inconsistencies in composed DSLs.
-- [ ] AC-02: The standard separates the canonical grammar and semantic model
+- [x] AC-02: The standard separates the canonical grammar and semantic model
   from parser engines, generated parsers, AST adapters and execution runtimes.
-- [ ] AC-03: Adoption guidance compares Lark, TatSu, textX, pest, nom, nearley,
+- [x] AC-03: Adoption guidance compares Lark, TatSu, textX, pest, nom, nearley,
   Ohm and ANTLR using verified upstream documentation and gives bounded
   selection criteria for LLM-to-DSL pipelines.
-- [ ] AC-04: The guidance contains an Env DSL 1 example that conforms to the
+- [x] AC-04: The guidance contains an Env DSL 1 example that conforms to the
   inspected ABNF and remains inert descriptive data rather than executable
   parser configuration.
-- [ ] AC-05: The worked `new-project` profile explicitly records that its
+- [x] AC-05: The worked `new-project` profile explicitly records that its
   Policy/Procedure DSL is a separate language which may consume Env DSL data,
   but is neither an Env DSL 1 extension nor an Env DSL 1 implementation.
-- [ ] AC-06: The current `governance_env.py` boundary is accurately classified
+- [x] AC-06: The current `governance_env.py` boundary is accurately classified
   as an adapter for the embedded declaration/dotenv contract, with concrete
   incompatibilities that prevent an Env DSL 1 conformance claim.
-- [ ] AC-07: Manifest ownership and SHA-256 bindings are updated for every
+- [x] AC-07: Manifest ownership and SHA-256 bindings are updated for every
   changed standard or guidance artifact, and deterministic DSL, governance and
   Docker checks pass.
 
