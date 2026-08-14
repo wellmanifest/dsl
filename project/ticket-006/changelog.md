@@ -9,3 +9,5 @@
 - Corrected the delivery class from XS to S because the declared 20-minute
   hosted-validation slice exceeds the policy's 10-minute XS limit; scope and
   budgets remain unchanged.
+- Upgraded both Linux and Windows checkout/setup-python pins to verified v7
+  commits and passed all local host and networkless Docker validation.

@@ -31,9 +31,15 @@ this ticket's scope.
 - Allocated `ticket-006` through the managed clone-wide allocator in a detached
   worktree, then created `ticket/006-node24-actions`.
 - Verified the exact upstream v7 tag commits before recording the implementation
-  scope. No workflow implementation has changed in this plan-only state.
+  scope.
+- Replaced both Linux and Windows uses of checkout/setup-python with the exact
+  verified v7 commits; triggers, permissions, job names, Python 3.12 and all
+  validation logic are byte-for-byte unchanged.
+- Exact pin assertions, required-check alignment, actionlint, Python compile,
+  Ruff, DSL self-test, host governance, Docker build, networkless governance,
+  and networkless DSL self-test pass.
 
 ## Blockers
 
-- None. The user's continuation instruction supplies bounded session execution
-  authorization; protected merge approval remains external.
+- Hosted pull-request evidence and independent exact-head review require a push
+  and PR, which are external coordination and remain separately authorized.

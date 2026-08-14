@@ -3,7 +3,7 @@
 - **ID**: ticket-006
 - **Owner**: unresolved:human
 - **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Workflow state**: PUBLICATION
 - **Created**: 2026-08-14
 
 ## Goal and scope
@@ -17,11 +17,11 @@ names, triggers, permissions and validation behavior remain unchanged.
 
 - [x] AC-01: The user's repeated instruction to continue authorizes this
   one-workflow maintenance scope for the current session.
-- [ ] AC-02: Every `actions/checkout` use is pinned to verified v7.0.1 commit
+- [x] AC-02: Every `actions/checkout` use is pinned to verified v7.0.1 commit
   `3d3c42e5aac5ba805825da76410c181273ba90b1`.
-- [ ] AC-03: Every `actions/setup-python` use is pinned to verified v7.0.0
+- [x] AC-03: Every `actions/setup-python` use is pinned to verified v7.0.0
   commit `5fda3b95a4ea91299a34e894583c3862153e4b97`.
-- [ ] AC-04: Actionlint, governance, deterministic host checks, and
+- [x] AC-04: Actionlint, governance, deterministic host checks, and
   networkless Docker validation pass without changing required check names.
 - [ ] AC-05: Hosted Linux, Windows and reusable governance jobs pass and no
   longer emit the Node.js 20 deprecation warning for these actions.
