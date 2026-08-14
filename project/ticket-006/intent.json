@@ -1,0 +1,89 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-006",
+  "summary": "Upgrade GitHub Actions to Node 24",
+  "workstream": "infrastructure",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-006/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    ".github/workflows/ci.yml"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md",
+    ".governance/**",
+    "AGENTS.md",
+    "spec/**",
+    "schemas/**",
+    "profiles/**",
+    "src/**",
+    "docs/**",
+    "Dockerfile",
+    "compose.yml"
+  ],
+  "stacks": ["docker"],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "fb06a4f1c75f1f19804a846baed0a2b17dc8d15a",
+    "targetBranch": "main",
+    "outcome": "The DSL required checks use immutable Node.js 24-compatible GitHub Actions without changing validation behavior.",
+    "nonGoals": [
+      "Modify the reusable governance standard",
+      "Change workflow triggers, permissions, job names, Python version, or validation logic",
+      "Add dependencies, releases, branch-protection changes, or automatic merge"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 20,
+    "budgets": {
+      "maxImplementationFiles": 1,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Preserve the existing workflow contract and replace only the four immutable action references with upstream Node.js 24-compatible tag commits.",
+      "components": [
+        {
+          "name": "hosted-validation-boundary",
+          "paths": [".github/workflows/ci.yml"]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Restore the previous immutable action pins through a reviewed infrastructure ticket."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-02",
+        "commands": ["rg action pin assertions", "GitHub API tag verification"],
+        "evidence": "Both checkout references equal the verified v7.0.1 commit and no v4.2.2 pin remains."
+      },
+      {
+        "criterion": "AC-03",
+        "commands": ["rg action pin assertions", "GitHub API tag verification"],
+        "evidence": "Both setup-python references equal the verified v7.0.0 commit and no v5.4.0 pin remains."
+      },
+      {
+        "criterion": "AC-04",
+        "commands": ["./project/governance-check.sh --actor agent", "actionlint .github/workflows/ci.yml", "docker build and docker run --network none"],
+        "evidence": "Local deterministic and containerized governance checks pass with unchanged required job names."
+      },
+      {
+        "criterion": "AC-05",
+        "commands": ["GitHub Actions dsl-ci pull_request run"],
+        "evidence": "Hosted Linux, Windows and reusable governance jobs pass without Node.js 20 warnings from checkout or setup-python."
+      }
+    ]
+  }
+}
