@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://wellmanifest.dev/schemas/dsl-commands/validate",
   "title": "DSL command: VALIDATE",
-  "description": "Shared core schema for the VALIDATE command. Validates a path or artifact.",
+  "description": "Shared core schema for path/artifact VALIDATE (validate-path). Required: verb + path. Not for workflow validation — nlp2dsl VALIDATE (workflow_file/workflow/check_policy) is a separate contract and must not ADOPT this schema.",
   "type": "object",
   "required": ["verb", "path"],
   "properties": {

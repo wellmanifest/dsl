@@ -50,7 +50,7 @@
     {
       "path": "schemas/commands/validate.schema.json",
       "role": "schema",
-      "digest": "sha256:49d92d4c3ca83db90b078a476a6b926b2c347f2e03d278de478b50a05cef6b3b"
+      "digest": "sha256:51d7022d1bafcf3256838cd11c97bef8ce443962b7b138fcdd5949669b6e49bf"
     },
     {
       "path": "schemas/commands/generate.schema.json",
