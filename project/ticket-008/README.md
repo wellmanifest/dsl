@@ -8,14 +8,14 @@
 
 ## Goal and scope
 
-Extract the 4 command schemas shared identically (modulo `$id` and
-DSL-specific URI patterns) by `doql`, `testql`, and `vql` into a shared
-pack under `schemas/commands/` in `wellmanifest/dsl`.
+Extract the command schemas shared identically (modulo `$id` and
+DSL-specific URI patterns) by `doql`, `testql`, `vql`, and `nlp2dsl`
+into a shared pack under `schemas/commands/` in `wellmanifest/dsl`.
 
 The shared schemas declare the common core (verb, required fields, base
 properties). DSL-specific constraints (URI patterns like `^doql://`,
-format enums, minLength) remain in the consuming repos as extensions via
-`allOf` + `$ref`.
+format enums, minLength, optional `file`) remain in the consuming repos
+as extensions via `x-adopts` + inline properties.
 
 ## SESSION_EXECUTION_AUTHORIZATION
 
@@ -29,9 +29,20 @@ DSL-specific extensions (URI pattern, format enum, minLength).
 | Command | Common core | DSL-specific extensions |
 |---|---|---|
 | `validate` | verb, path | none — 100% identical |
-| `generate` | verb, text, out | doql: `text.minLength: 1` |
+| `generate` | verb, text, out | doql: `text.minLength: 1`; nlp2dsl: `mode` |
 | `patch` | verb, target, with_path, file | vql: `target.pattern: ^vql://` |
 | `query` | verb, target, file, format | each: `target.pattern: ^<dsl>://`; vql: no `less` in format enum |
+| `resolve` | verb, text | doql: optional `file`; both: `text.minLength: 1` |
+
+## Non-adoption decision: VALIDATE
+
+Shared `VALIDATE` is **validate-path** (`verb` + `path`), adopted by
+`doql` / `testql` / `vql`.
+
+`nlp2dsl` `VALIDATE` is **validate-workflow** (`workflow_file` /
+`workflow` / `check_policy`). Same verb name, different contract — do
+**not** force unification or `x-adopts` of the shared path schema.
+`diff-dsl` correctly reports this as non-adopted command overlap.
 
 ## Acceptance criteria
 
@@ -41,6 +52,7 @@ DSL-specific extensions (URI pattern, format enum, minLength).
 - [x] AC-04: `schemas/commands/query.schema.json` created with shared core
 - [x] AC-05: `dsl_check.py validate` passes
 - [ ] AC-06: `governance-check.sh` passes
+- [x] AC-07: `schemas/commands/resolve.schema.json` created with shared core
 
 ## Participants
 
