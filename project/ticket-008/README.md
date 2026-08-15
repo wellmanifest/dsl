@@ -34,6 +34,16 @@ DSL-specific extensions (URI pattern, format enum, minLength).
 | `query` | verb, target, file, format | each: `target.pattern: ^<dsl>://`; vql: no `less` in format enum |
 | `resolve` | verb, text | doql: optional `file`; both: `text.minLength: 1` |
 
+## Non-adoption decision: VALIDATE
+
+Shared `VALIDATE` is **validate-path** (`verb` + `path`), adopted by
+`doql` / `testql` / `vql`.
+
+`nlp2dsl` `VALIDATE` is **validate-workflow** (`workflow_file` /
+`workflow` / `check_policy`). Same verb name, different contract — do
+**not** force unification or `x-adopts` of the shared path schema.
+`diff-dsl` correctly reports this as non-adopted command overlap.
+
 ## Acceptance criteria
 
 - [x] AC-01: `schemas/commands/validate.schema.json` created with shared core

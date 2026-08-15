@@ -1,5 +1,11 @@
 # Ticket Changelog (ticket-008)
 
+## [0.2.1] - 2026-08-15
+
+- Document VALIDATE non-adoption: shared schema is validate-path only;
+  nlp2dsl validate-workflow stays separate.
+- Refresh `acceptedBaseSha` to current `main` and restore XS budget caps.
+
 ## [0.2.0] - 2026-08-15
 
 - Added `schemas/commands/resolve.schema.json` (shared core: verb + text).

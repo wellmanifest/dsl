@@ -23,18 +23,19 @@
   "conflictsWith": [],
   "integrationTicket": null,
   "delivery": {
-    "acceptedBaseSha": "2a6eb04db075e0221d3a0c7de31bb82d7bc3a8a2",
+    "acceptedBaseSha": "67c10bf51c6f984c47f018fac8990e1451436bdd",
     "targetBranch": "main",
     "outcome": "Add 5 shared DSL command schemas (validate, generate, patch, query, resolve) under schemas/commands/ and bind them in the wellmanifest/dsl manifest",
     "nonGoals": [
       "Do not modify doql/testql/vql/nlp2dsl repos in this ticket",
       "Do not extract Python shared code (Tier 2)",
-      "Do not change dsl_check.py logic"
+      "Do not change dsl_check.py logic",
+      "Do not unify nlp2dsl validate-workflow with shared validate-path"
     ],
     "complexity": "XS",
-    "estimatedMinutes": 15,
+    "estimatedMinutes": 10,
     "budgets": {
-      "maxImplementationFiles": 6,
+      "maxImplementationFiles": 5,
       "maxAffectedComponents": 1,
       "maxPublicInterfaceChanges": 0,
       "maxRuntimeDependencies": 0
