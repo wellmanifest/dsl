@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wellmanifest.dev/schemas/dsl-commands/patch",
+  "title": "DSL command: PATCH",
+  "description": "Shared core schema for the PATCH command. Applies a patch from a file to a target.",
+  "type": "object",
+  "required": ["verb", "target", "with_path"],
+  "properties": {
+    "verb": { "const": "PATCH" },
+    "target": { "type": "string", "minLength": 1 },
+    "with_path": { "type": "string", "minLength": 1 },
+    "file": { "type": "string" }
+  },
+  "additionalProperties": false
+}

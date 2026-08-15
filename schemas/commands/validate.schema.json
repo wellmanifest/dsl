@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wellmanifest.dev/schemas/dsl-commands/validate",
+  "title": "DSL command: VALIDATE",
+  "description": "Shared core schema for the VALIDATE command. Validates a path or artifact.",
+  "type": "object",
+  "required": ["verb", "path"],
+  "properties": {
+    "verb": { "const": "VALIDATE" },
+    "path": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

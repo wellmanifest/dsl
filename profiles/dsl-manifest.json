@@ -32,6 +32,7 @@
     "profiles/dsl-manifest.json",
     "profiles/**",
     "schemas/dsl-manifest.schema.json",
+    "schemas/commands/**",
     "spec/DSL_STANDARD.md",
     "src/dsl_check.py"
   ],
@@ -45,6 +46,26 @@
       "path": "schemas/dsl-manifest.schema.json",
       "role": "schema",
       "digest": "sha256:34d356b76bbd483372df84bb986e15bb84e9c1f8b11b7dc9e3a6c7276c85ed13"
+    },
+    {
+      "path": "schemas/commands/validate.schema.json",
+      "role": "schema",
+      "digest": "sha256:5e73de4fabea68b0858edd62cfa4c052fe68f251e2244ccb536a4ea5387ebba5"
+    },
+    {
+      "path": "schemas/commands/generate.schema.json",
+      "role": "schema",
+      "digest": "sha256:68c1f8fca66bd16c50eb92e708f6c4003c2c1732e16a225b7b0b870567b3d673"
+    },
+    {
+      "path": "schemas/commands/patch.schema.json",
+      "role": "schema",
+      "digest": "sha256:eb42910bbef594da85d6e93677b0a17dc9272599ac30c1da2d23487902082ab0"
+    },
+    {
+      "path": "schemas/commands/query.schema.json",
+      "role": "schema",
+      "digest": "sha256:111821e171782b66d526f3a6f6c437787fd74144ceb9be37f1b2edf1c5e57bd0"
     },
     {
       "path": "spec/DSL_STANDARD.md",

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wellmanifest.dev/schemas/dsl-commands/generate",
+  "title": "DSL command: GENERATE",
+  "description": "Shared core schema for the GENERATE command. Generates output from text input.",
+  "type": "object",
+  "required": ["verb", "text"],
+  "properties": {
+    "verb": { "const": "GENERATE" },
+    "text": { "type": "string" },
+    "out": { "type": "string" }
+  },
+  "additionalProperties": false
+}
