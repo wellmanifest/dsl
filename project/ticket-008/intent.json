@@ -23,7 +23,7 @@
   "conflictsWith": [],
   "integrationTicket": null,
   "delivery": {
-    "acceptedBaseSha": "b7d0595c95e5abbb48ebfdbdae0bc6d43c6f82f4",
+    "acceptedBaseSha": "2a6eb04db075e0221d3a0c7de31bb82d7bc3a8a2",
     "targetBranch": "main",
     "outcome": "Add 4 shared DSL command schemas (validate, generate, patch, query) under schemas/commands/ and bind them in the wellmanifest/dsl manifest",
     "nonGoals": [

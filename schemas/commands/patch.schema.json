@@ -7,8 +7,8 @@
   "required": ["verb", "target", "with_path"],
   "properties": {
     "verb": { "const": "PATCH" },
-    "target": { "type": "string", "minLength": 1 },
-    "with_path": { "type": "string", "minLength": 1 },
+    "target": { "type": "string" },
+    "with_path": { "type": "string" },
     "file": { "type": "string" }
   },
   "additionalProperties": false

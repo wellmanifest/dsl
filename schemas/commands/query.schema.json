@@ -2,14 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://wellmanifest.dev/schemas/dsl-commands/query",
   "title": "DSL command: QUERY",
-  "description": "Shared core schema for the QUERY command. Queries a target and returns results in a format.",
+  "description": "Shared core schema for the QUERY command. Queries a target and returns results.",
   "type": "object",
   "required": ["verb", "target"],
   "properties": {
     "verb": { "const": "QUERY" },
-    "target": { "type": "string", "minLength": 1 },
+    "target": { "type": "string" },
     "file": { "type": "string" },
-    "format": { "enum": ["json", "yaml"], "default": "json" }
+    "format": { "type": "string", "default": "json" }
   },
   "additionalProperties": false
 }

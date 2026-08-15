@@ -50,7 +50,7 @@
     {
       "path": "schemas/commands/validate.schema.json",
       "role": "schema",
-      "digest": "sha256:5e73de4fabea68b0858edd62cfa4c052fe68f251e2244ccb536a4ea5387ebba5"
+      "digest": "sha256:49d92d4c3ca83db90b078a476a6b926b2c347f2e03d278de478b50a05cef6b3b"
     },
     {
       "path": "schemas/commands/generate.schema.json",
@@ -60,12 +60,12 @@
     {
       "path": "schemas/commands/patch.schema.json",
       "role": "schema",
-      "digest": "sha256:eb42910bbef594da85d6e93677b0a17dc9272599ac30c1da2d23487902082ab0"
+      "digest": "sha256:32a88614cf5861506ae87f00c8eb4286bc4f8285be43ffa61436982036c0097a"
     },
     {
       "path": "schemas/commands/query.schema.json",
       "role": "schema",
-      "digest": "sha256:111821e171782b66d526f3a6f6c437787fd74144ceb9be37f1b2edf1c5e57bd0"
+      "digest": "sha256:812c755a92e6b4a945dcc1d63bf2d5967acae09577f2945925f7432cdf72165c"
     },
     {
       "path": "spec/DSL_STANDARD.md",
