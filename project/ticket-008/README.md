@@ -2,8 +2,8 @@
 
 - **ID**: ticket-008
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Status**: DONE
+- **Workflow state**: DONE
 - **Created**: 2026-08-15
 
 ## Goal and scope
@@ -51,7 +51,7 @@ Shared `VALIDATE` is **validate-path** (`verb` + `path`), adopted by
 - [x] AC-03: `schemas/commands/patch.schema.json` created with shared core
 - [x] AC-04: `schemas/commands/query.schema.json` created with shared core
 - [x] AC-05: `dsl_check.py validate` passes
-- [ ] AC-06: `governance-check.sh` passes
+- [x] AC-06: `governance-check.sh` passes (Validator direct-pr on PR #11/#12)
 - [x] AC-07: `schemas/commands/resolve.schema.json` created with shared core
 
 ## Participants
