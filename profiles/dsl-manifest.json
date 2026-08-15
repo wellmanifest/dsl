@@ -68,6 +68,11 @@
       "digest": "sha256:812c755a92e6b4a945dcc1d63bf2d5967acae09577f2945925f7432cdf72165c"
     },
     {
+      "path": "schemas/commands/resolve.schema.json",
+      "role": "schema",
+      "digest": "sha256:f1e68cba469cafb7d3299bb2300b6d7ce4ca028bfec216eac3ba64af67d554b4"
+    },
+    {
       "path": "spec/DSL_STANDARD.md",
       "role": "documentation",
       "digest": "sha256:2dfb09b5689289c3ad096057ca1dc2f19512639e3662188dd6c5ee25e4e8c53b"

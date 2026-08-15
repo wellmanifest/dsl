@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wellmanifest.dev/schemas/dsl-commands/resolve",
+  "title": "DSL command: RESOLVE",
+  "description": "Shared core schema for the RESOLVE command. Resolves text input to a result.",
+  "type": "object",
+  "required": ["verb", "text"],
+  "properties": {
+    "verb": { "const": "RESOLVE" },
+    "text": { "type": "string" }
+  },
+  "additionalProperties": false
+}

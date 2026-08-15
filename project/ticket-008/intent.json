@@ -1,7 +1,7 @@
 {
   "schema": "new-project.intent/v3",
   "ticket": "ticket-008",
-  "summary": "Shared DSL command schema pack for GENERATE/PATCH/QUERY/VALIDATE",
+  "summary": "Shared DSL command schema pack for GENERATE/PATCH/QUERY/VALIDATE/RESOLVE",
   "workstream": "integration",
   "classification": {
     "kind": "FEATURE",
@@ -25,16 +25,16 @@
   "delivery": {
     "acceptedBaseSha": "2a6eb04db075e0221d3a0c7de31bb82d7bc3a8a2",
     "targetBranch": "main",
-    "outcome": "Add 4 shared DSL command schemas (validate, generate, patch, query) under schemas/commands/ and bind them in the wellmanifest/dsl manifest",
+    "outcome": "Add 5 shared DSL command schemas (validate, generate, patch, query, resolve) under schemas/commands/ and bind them in the wellmanifest/dsl manifest",
     "nonGoals": [
-      "Do not modify doql/testql/vql repos in this ticket",
+      "Do not modify doql/testql/vql/nlp2dsl repos in this ticket",
       "Do not extract Python shared code (Tier 2)",
       "Do not change dsl_check.py logic"
     ],
     "complexity": "XS",
-    "estimatedMinutes": 10,
+    "estimatedMinutes": 15,
     "budgets": {
-      "maxImplementationFiles": 5,
+      "maxImplementationFiles": 6,
       "maxAffectedComponents": 1,
       "maxPublicInterfaceChanges": 0,
       "maxRuntimeDependencies": 0
