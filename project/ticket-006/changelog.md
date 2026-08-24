@@ -1,5 +1,11 @@
 # Ticket Changelog (ticket-006)
 
+## 2026-08-14 publication
+
+- Closed after `ifuri-validator-agent` approved pull request #10.
+- Pinned `actions/checkout` to `3d3c42e5aac5ba805825da76410c181273ba90b1` and `actions/setup-python` to `5fda3b95a4ea91299a34e894583c3862153e4b97`.
+- PR #10 merged into `main`.
+
 ## [0.1.0] - 2026-08-14
 
 - Initial governance scaffold created.

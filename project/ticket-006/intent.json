@@ -26,12 +26,14 @@
     "Dockerfile",
     "compose.yml"
   ],
-  "stacks": ["docker"],
+  "stacks": [
+    "docker"
+  ],
   "dependsOn": [],
   "conflictsWith": [],
   "integrationTicket": null,
   "delivery": {
-    "acceptedBaseSha": "fb06a4f1c75f1f19804a846baed0a2b17dc8d15a",
+    "acceptedBaseSha": "0e088f9a941584cbff31a6136d8da1368b6d8591",
     "targetBranch": "main",
     "outcome": "The DSL required checks use immutable Node.js 24-compatible GitHub Actions without changing validation behavior.",
     "nonGoals": [
@@ -53,35 +55,53 @@
       "components": [
         {
           "name": "hosted-validation-boundary",
-          "paths": [".github/workflows/ci.yml"]
+          "paths": [
+            ".github/workflows/ci.yml"
+          ]
         }
       ],
       "responsibilityChanges": false,
       "interfaceChanges": [],
       "dataChanges": [],
-      "ui": {"impact": "none", "states": [], "evidence": []},
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
       "rollback": "Restore the previous immutable action pins through a reviewed infrastructure ticket."
     },
     "runtimeDependencies": [],
     "validation": [
       {
         "criterion": "AC-02",
-        "commands": ["rg action pin assertions", "GitHub API tag verification"],
+        "commands": [
+          "rg action pin assertions",
+          "GitHub API tag verification"
+        ],
         "evidence": "Both checkout references equal the verified v7.0.1 commit and no v4.2.2 pin remains."
       },
       {
         "criterion": "AC-03",
-        "commands": ["rg action pin assertions", "GitHub API tag verification"],
+        "commands": [
+          "rg action pin assertions",
+          "GitHub API tag verification"
+        ],
         "evidence": "Both setup-python references equal the verified v7.0.0 commit and no v5.4.0 pin remains."
       },
       {
         "criterion": "AC-04",
-        "commands": ["./project/governance-check.sh --actor agent", "actionlint .github/workflows/ci.yml", "docker build and docker run --network none"],
+        "commands": [
+          "./project/governance-check.sh --actor agent",
+          "actionlint .github/workflows/ci.yml",
+          "docker build and docker run --network none"
+        ],
         "evidence": "Local deterministic and containerized governance checks pass with unchanged required job names."
       },
       {
         "criterion": "AC-05",
-        "commands": ["GitHub Actions dsl-ci pull_request run"],
+        "commands": [
+          "GitHub Actions dsl-ci pull_request run"
+        ],
         "evidence": "Hosted Linux, Windows and reusable governance jobs pass without Node.js 20 warnings from checkout or setup-python."
       }
     ]
