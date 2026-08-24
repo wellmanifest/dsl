@@ -2,8 +2,8 @@
 
 - **ID**: ticket-009
 - **Owner**: unresolved:human
-- **Status**: PLAN
-- **Workflow state**: WAIT_FOR_APPROVAL
+- **Status**: IN_PROGRESS
+- **Workflow state**: EDIT
 - **Created**: 2026-08-24
 
 ## Goal and scope
@@ -14,12 +14,16 @@ immutable revision `6d27f5a9eef2be8fc7cfdbd12975dc57bc13778a` inside
 
 ## Acceptance criteria
 
-- [ ] AC-01: `profiles/dsl-manifest.json` maps `wellmanifest/code-dsl` v0.1.0-dev as `compatible-with`.
-- [ ] AC-02: `standardsLock.entries` pins `wellmanifest.code` v0.1.0-dev at immutable revision `6d27f5a9eef2be8fc7cfdbd12975dc57bc13778a` with exact schema and proto contract digests.
-- [ ] AC-03: `python3 src/dsl_check.py validate profiles/dsl-manifest.json` and `standards` pass with 0 errors.
-- [ ] AC-04: `./project/governance-check.sh --actor agent` reports `GOV-PASS` (0 errors, 0 warnings).
+- [x] AC-01: `profiles/dsl-manifest.json` maps `wellmanifest/code-dsl` v0.1.0-dev as `compatible-with`.
+- [x] AC-02: `standardsLock.entries` pins `wellmanifest.code` v0.1.0-dev at immutable revision `6d27f5a9eef2be8fc7cfdbd12975dc57bc13778a` with exact schema and proto contract digests.
+- [x] AC-03: `python3 src/dsl_check.py validate profiles/dsl-manifest.json` and `standards` pass with 0 errors.
+- [x] AC-04: `./project/governance-check.sh --actor agent` reports `GOV-PASS` (0 errors, 0 warnings).
 
 ## Participants
 
 - Human participant: unresolved; no user-* file was created by this script.
 - Agent participant: [ai-gemini.md](ai-gemini.md)
+
+## Authorization
+
+User instructed to continue integration tasks, granting SESSION_EXECUTION_AUTHORIZATION for this bounded standardsLock registration.

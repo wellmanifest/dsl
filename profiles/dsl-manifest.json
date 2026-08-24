@@ -122,9 +122,15 @@
   },
   "findingPolicy": {
     "schema": "wellmanifest.dsl/findings/v1",
-    "requiredProducers": ["wellmanifest.dsl-check"],
-    "securityProducers": ["wellmanifest.dsl-check"],
-    "blockingSeverities": ["critical"],
+    "requiredProducers": [
+      "wellmanifest.dsl-check"
+    ],
+    "securityProducers": [
+      "wellmanifest.dsl-check"
+    ],
+    "blockingSeverities": [
+      "critical"
+    ],
     "requireEvaluable": true,
     "blockUnresolvedSecurity": true
   },
@@ -136,7 +142,11 @@
     "runtimeIsolation": false
   },
   "conformance": {
-    "levels": ["manifest", "contract", "runtime"],
+    "levels": [
+      "manifest",
+      "contract",
+      "runtime"
+    ],
     "commands": [
       "python3 src/dsl_check.py validate profiles/dsl-manifest.json",
       "python3 src/dsl_check.py standards profiles/dsl-manifest.json",
@@ -157,6 +167,12 @@
       "version": "0.1.0-draft",
       "relation": "maps-to",
       "uri": "https://github.com/wellmanifest/poa"
+    },
+    {
+      "standard": "wellmanifest/code-dsl",
+      "version": "0.1.0-dev",
+      "relation": "compatible-with",
+      "uri": "https://github.com/wellmanifest/code-dsl"
     }
   ],
   "standardsLock": {
@@ -171,6 +187,22 @@
           {
             "ref": "schema://wellmanifest.dev/new-project/governance/v2",
             "digest": "sha256:d48f258e3397ac2d8c5010e5ccdeef9eaf87b0b015d56798d11d5916c5f70a18"
+          }
+        ]
+      },
+      {
+        "standard": "wellmanifest.code",
+        "version": "0.1.0-dev",
+        "repository": "https://github.com/wellmanifest/code-dsl",
+        "revision": "6d27f5a9eef2be8fc7cfdbd12975dc57bc13778a",
+        "contracts": [
+          {
+            "ref": "https://wellmanifest.com/schemas/code-dsl/v1",
+            "digest": "sha256:ff782c1f5325d330fee22ed4805955c400c0a34655e8c2fb8082393aa497bf45"
+          },
+          {
+            "ref": "https://wellmanifest.com/proto/code-dsl/v1",
+            "digest": "sha256:43b8863cccf3efa6b83a3477e6d29c1e71720f5dfff1ea307c07b3b46894ff63"
           }
         ]
       }
