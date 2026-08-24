@@ -1,0 +1,4 @@
+2026-08-24 plan base=eb19b8f97bd130bcd7344541652326c9c53c8a2f
+2026-08-24 standards_lock target=wellmanifest.code revision=6d27f5a9eef2be8fc7cfdbd12975dc57bc13778a
+2026-08-24 dsl_check validate=DSL-PASS standards=DSL-PASS self_test=PASS
+2026-08-24 governance result=GOV-PASS
