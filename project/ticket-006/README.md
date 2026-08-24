@@ -2,8 +2,8 @@
 
 - **ID**: ticket-006
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: PUBLICATION
+- **Status**: DONE
+- **Workflow state**: DONE
 - **Created**: 2026-08-14
 
 ## Goal and scope
@@ -23,8 +23,16 @@ names, triggers, permissions and validation behavior remain unchanged.
   commit `5fda3b95a4ea91299a34e894583c3862153e4b97`.
 - [x] AC-04: Actionlint, governance, deterministic host checks, and
   networkless Docker validation pass without changing required check names.
-- [ ] AC-05: Hosted Linux, Windows and reusable governance jobs pass and no
+- [x] AC-05: Hosted Linux, Windows and reusable governance jobs pass and no
   longer emit the Node.js 20 deprecation warning for these actions.
+
+
+## Publication evidence
+
+- Pull request: `wellmanifest/dsl#10`
+- Approved head: `3b0533342e71c027e8b0a1b3433267ba8a4e084f`
+- Review approval: `ifuri-validator-agent` (review `PRR_kwDOTzKVVs8AAAABJh9LlQ`)
+- Merged to `main`
 
 ## Participants
 

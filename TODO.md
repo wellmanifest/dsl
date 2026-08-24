@@ -18,7 +18,7 @@
   (`validate`, `generate`, `patch`, `query`, `resolve`) under `schemas/commands/`;
   `ifuri-validator-agent` approved PRs #11/#12; closed at
   `46b57dbb77656ca613b563f4dbaccac16d98583d`.
-- [ ] [`ticket-006`](project/ticket-006/README.md) — upgrade the target-owned
+- [x] [`ticket-006`](project/ticket-006/README.md) — upgrade the target-owned
   checkout and Python setup actions to immutable Node.js 24-compatible pins
   without changing the required-check contract.
 - [ ] Add POA to `standardsLock` only after its updated v1 contract is committed
