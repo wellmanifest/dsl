@@ -1,0 +1,85 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-009",
+  "summary": "Lock Code DSL standard into standardsLock",
+  "workstream": "integration",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-009/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "profiles/dsl-manifest.json"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md",
+    ".governance/**",
+    "AGENTS.md"
+  ],
+  "stacks": [
+    "docker"
+  ],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "eb19b8f97bd130bcd7344541652326c9c53c8a2f",
+    "targetBranch": "main",
+    "outcome": "Lock wellmanifest.code standard 0.1.0-dev at revision 6d27f5a9eef2be8fc7cfdbd12975dc57bc13778a in profiles/dsl-manifest.json standardsLock and mappings.",
+    "nonGoals": [
+      "No schema logic changes in dsl core",
+      "No governance manifest modifications"
+    ],
+    "complexity": "XS",
+    "estimatedMinutes": 10,
+    "budgets": {
+      "maxImplementationFiles": 1,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Add wellmanifest.code mapping and standardsLock pin in profiles/dsl-manifest.json.",
+      "components": [
+        {
+          "name": "profiles-manifest",
+          "paths": [
+            "profiles/dsl-manifest.json"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the standardsLock entry."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-03",
+        "commands": [
+          "python3 src/dsl_check.py validate profiles/dsl-manifest.json",
+          "python3 src/dsl_check.py standards profiles/dsl-manifest.json",
+          "python3 src/dsl_check.py self-test"
+        ],
+        "evidence": "DSL-PASS: passed (0 errors) on manifest, standards and self-test"
+      },
+      {
+        "criterion": "AC-04",
+        "commands": [
+          "./project/governance-check.sh --actor agent"
+        ],
+        "evidence": "GOV-PASS: passed (0 errors, 0 warnings)"
+      }
+    ]
+  }
+}
