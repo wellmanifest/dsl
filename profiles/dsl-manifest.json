@@ -80,7 +80,7 @@
     {
       "path": "src/dsl_check.py",
       "role": "parser-contract",
-      "digest": "sha256:34c8d5e13135a6ce88f9bde5a0658d15ab61edc7a4536706df31593b484164b2"
+      "digest": "sha256:4902be03974b4ecbe9b7dd6d822e810a48d7f7574feba3170619605f553e164a"
     }
   ],
   "namespaces": [
