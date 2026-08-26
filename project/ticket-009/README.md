@@ -2,8 +2,8 @@
 
 - **ID**: ticket-009
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Status**: DONE
+- **Workflow state**: DONE
 - **Created**: 2026-08-24
 
 ## Goal and scope
@@ -27,3 +27,9 @@ immutable revision `6d27f5a9eef2be8fc7cfdbd12975dc57bc13778a` inside
 ## Authorization
 
 User instructed to continue integration tasks, granting SESSION_EXECUTION_AUTHORIZATION for this bounded standardsLock registration.
+
+## Completion
+
+All four acceptance criteria are evidenced in `ai-gemini-logs.txt`; the ticket
+was left active after successful validation and is now closed without changing
+its already published standard pin.
