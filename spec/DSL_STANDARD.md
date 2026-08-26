@@ -143,6 +143,20 @@ The `llm.mode` value declares whether a language itself is an LLM boundary:
 For `input` and `bidirectional`, `requestSchemas` MUST be non-empty. For `output`
 and `bidirectional`, `responseSchemas` MUST be non-empty. `strict` MUST be true.
 
+Every enabled LLM **decision boundary** MUST be `bidirectional` and declare one
+of two closed `decisionProtocol` values:
+
+- `dsl-input-output`: the model receives a named request DSL and returns a
+  named response DSL; natural language is forbidden;
+- `nl-to-dsl-input-output`: a human may supply natural language only inside a
+  declared typed source schema, and the runtime translates it to the named
+  request DSL before the model decision. The model still returns only the
+  named response DSL.
+
+`decisionProtocol=none` is required when `llm.mode=none`. A direct free-text
+prompt, an untyped response, or a heuristic fallback that performs an effect is
+not a conforming decision boundary.
+
 Natural language is either:
 
 - `forbidden`; or
@@ -430,6 +444,7 @@ bytes and declares the required vocabulary and finding policy:
     "responseSchemas": [],
     "naturalLanguage": "typed-source-only",
     "sourceSchema": "wellmanifest.dsl/source/v1",
+    "decisionProtocol": "none",
     "modelAuthority": "none",
     "strict": true
   },

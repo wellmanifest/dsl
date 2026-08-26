@@ -544,6 +544,7 @@ def validate_llm(value: Any, report: Report, path: Path) -> None:
         "responseSchemas",
         "naturalLanguage",
         "sourceSchema",
+        "decisionProtocol",
         "modelAuthority",
         "strict",
     }
@@ -580,6 +581,31 @@ def validate_llm(value: Any, report: Report, path: Path) -> None:
         report.error(
             "DSL-LLM-001", "forbidden natural language requires sourceSchema=null", path
         )
+    protocol = item.get("decisionProtocol")
+    if protocol not in {"none", "dsl-input-output", "nl-to-dsl-input-output"}:
+        report.error("DSL-LLM-001", "llm.decisionProtocol is invalid", path)
+    elif mode == "none" and protocol != "none":
+        report.error(
+            "DSL-LLM-001", "llm.mode=none requires decisionProtocol=none", path
+        )
+    elif mode != "none":
+        expected_protocol = (
+            "nl-to-dsl-input-output"
+            if natural == "typed-source-only"
+            else "dsl-input-output"
+        )
+        if protocol != expected_protocol:
+            report.error(
+                "DSL-LLM-001",
+                f"llm.decisionProtocol must equal {expected_protocol} for the declared naturalLanguage policy",
+                path,
+            )
+        if mode != "bidirectional" or not requests or not responses:
+            report.error(
+                "DSL-LLM-001",
+                "LLM decision boundaries require strict bidirectional requestSchemas and responseSchemas",
+                path,
+            )
     authority = item.get("modelAuthority")
     if mode == "none" and authority != "none":
         report.error("DSL-LLM-001", "llm.mode=none requires modelAuthority=none", path)
@@ -1862,6 +1888,7 @@ def valid_example_document(
             "responseSchemas": [],
             "naturalLanguage": "typed-source-only",
             "sourceSchema": "wellmanifest.dsl/source/v1",
+            "decisionProtocol": "none",
             "modelAuthority": "none",
             "strict": True,
         },
@@ -1949,6 +1976,49 @@ def self_test() -> int:
         llm_report, _ = validate_manifest(manifest_path, root)
         if not llm_report.has_code("DSL-LLM-001"):
             failures.append("invalid LLM boundary was not rejected")
+
+        dsl_decision = json.loads(json.dumps(document))
+        dsl_decision["llm"].update(
+            {
+                "mode": "bidirectional",
+                "requestSchemas": ["example.decision-request/v1"],
+                "responseSchemas": ["example.decision-response/v1"],
+                "naturalLanguage": "forbidden",
+                "sourceSchema": None,
+                "decisionProtocol": "dsl-input-output",
+                "modelAuthority": "propose-only",
+            }
+        )
+        manifest_path.write_text(
+            json.dumps(dsl_decision, indent=2) + "\n", encoding="utf-8"
+        )
+        dsl_decision_report, _ = validate_manifest(manifest_path, root)
+        if dsl_decision_report.failed:
+            failures.append("valid DSL decision boundary was rejected")
+
+        nl_decision = json.loads(json.dumps(dsl_decision))
+        nl_decision["llm"].update(
+            {
+                "naturalLanguage": "typed-source-only",
+                "sourceSchema": "example.source/v1",
+                "decisionProtocol": "nl-to-dsl-input-output",
+            }
+        )
+        manifest_path.write_text(
+            json.dumps(nl_decision, indent=2) + "\n", encoding="utf-8"
+        )
+        nl_decision_report, _ = validate_manifest(manifest_path, root)
+        if nl_decision_report.failed:
+            failures.append("valid NL-to-DSL decision boundary was rejected")
+
+        invalid_protocol = json.loads(json.dumps(nl_decision))
+        invalid_protocol["llm"]["decisionProtocol"] = "dsl-input-output"
+        manifest_path.write_text(
+            json.dumps(invalid_protocol, indent=2) + "\n", encoding="utf-8"
+        )
+        protocol_report, _ = validate_manifest(manifest_path, root)
+        if not protocol_report.has_code("DSL-LLM-001"):
+            failures.append("mismatched LLM decision protocol was not rejected")
 
         invalid_tier = json.loads(json.dumps(document))
         invalid_tier["publicationPolicy"]["declaredTier"] = "basic"

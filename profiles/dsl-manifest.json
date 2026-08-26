@@ -45,7 +45,7 @@
     {
       "path": "schemas/dsl-manifest.schema.json",
       "role": "schema",
-      "digest": "sha256:34d356b76bbd483372df84bb986e15bb84e9c1f8b11b7dc9e3a6c7276c85ed13"
+      "digest": "sha256:d128a2cab0459fab91788a062875242dc5cfd62fd9f37cab49c8adb42b28901d"
     },
     {
       "path": "schemas/commands/validate.schema.json",
@@ -75,12 +75,12 @@
     {
       "path": "spec/DSL_STANDARD.md",
       "role": "documentation",
-      "digest": "sha256:2dfb09b5689289c3ad096057ca1dc2f19512639e3662188dd6c5ee25e4e8c53b"
+      "digest": "sha256:0200618ef5136f622ec3e91ccf291c61b1b6bb2d4a39e3f6b801c81fc9f9b2b5"
     },
     {
       "path": "src/dsl_check.py",
       "role": "parser-contract",
-      "digest": "sha256:cf9416ae496666092d3109f0d937a66faecc486cf7d84c74e38de6154fa7fdf1"
+      "digest": "sha256:34c8d5e13135a6ce88f9bde5a0658d15ab61edc7a4536706df31593b484164b2"
     }
   ],
   "namespaces": [
@@ -108,6 +108,7 @@
     "responseSchemas": [],
     "naturalLanguage": "forbidden",
     "sourceSchema": null,
+    "decisionProtocol": "none",
     "modelAuthority": "none",
     "strict": true
   },
