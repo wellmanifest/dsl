@@ -1,0 +1,65 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-016",
+  "summary": "Respect terminal merge receipts in DSL CI",
+  "workstream": "infrastructure",
+  "classification": {
+    "kind": "BUG",
+    "priority": "P1",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-016/**",
+    "project/TICKETS.md",
+    ".github/workflows/ci.yml"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "a487a24abe63d98b24c50ac0bcfea5d3450bf406",
+    "targetBranch": "main",
+    "outcome": "Keep exact pre-merge governance while treating the protected default-branch merge receipt as terminal",
+    "nonGoals": [
+      "No governance runtime, ticket status, required-check name or branch protection change",
+      "No weakening of pull-request, review or non-default-head governance",
+      "No profile contract or runtime behavior change"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 25,
+    "budgets": {
+      "maxImplementationFiles": 1,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Follow the proven Twin terminal-receipt pattern: exact-range governance remains on reviewable and non-default heads, while default-branch events run verification without replaying ticket approval.",
+      "components": [
+        {
+          "name": "dsl-ci-revision-boundary",
+          "paths": [".github/workflows/ci.yml"]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Revert the unmerged atomic commit and leave issue #32 open."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-04",
+        "commands": [
+          "go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.9 .github/workflows/ci.yml",
+          "./project/governance-check.sh --actor agent --base a487a24abe63d98b24c50ac0bcfea5d3450bf406 --head HEAD"
+        ],
+        "evidence": "Exact host and container range validation plus protected post-merge push CI pass."
+      }
+    ]
+  }
+}
