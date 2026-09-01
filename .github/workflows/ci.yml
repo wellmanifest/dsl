@@ -99,6 +99,10 @@ jobs:
             ruff check src/dsl_check.py
             python3 src/dsl_check.py self-test
           fi
+          python3 -m py_compile tests/profile_contract_test.py
+          ruff format --check tests/profile_contract_test.py
+          ruff check tests/profile_contract_test.py
+          python3 tests/profile_contract_test.py
           governance_args=(
             --root .
             --manifest .governance/manifest.json
