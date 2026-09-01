@@ -1,0 +1,68 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-015",
+  "summary": "Run profile contracts in host CI",
+  "workstream": "infrastructure",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P1",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-015/**",
+    "project/TICKETS.md",
+    ".github/workflows/ci.yml"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "e018700c75fc673311c9542dcafa485cb013a083",
+    "targetBranch": "main",
+    "outcome": "Make profile graph and cross-document binding conformance a required host-CI failure boundary",
+    "nonGoals": [
+      "No profile schema, fixture, runtime or dependency change",
+      "No Docker image dependency expansion",
+      "No required-check name or branch protection change"
+    ],
+    "complexity": "XS",
+    "estimatedMinutes": 10,
+    "budgets": {
+      "maxImplementationFiles": 1,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Invoke the committed deterministic profile validator in the existing pinned host test job, alongside its compile and Ruff gates.",
+      "components": [
+        {
+          "name": "host-ci",
+          "paths": [".github/workflows/ci.yml"]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Revert the unmerged atomic commit and leave issue #19 open."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-04",
+        "commands": [
+          "ruff format --check tests/profile_contract_test.py",
+          "ruff check tests/profile_contract_test.py",
+          "python3 tests/profile_contract_test.py",
+          "go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.9 .github/workflows/ci.yml",
+          "./project/governance-check.sh --actor agent --base e018700c75fc673311c9542dcafa485cb013a083 --head HEAD"
+        ],
+        "evidence": "Pinned host checks and exact protected validation pass."
+      }
+    ]
+  }
+}
