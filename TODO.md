@@ -22,6 +22,9 @@
   checkout and Python setup actions to immutable Node.js 24-compatible pins
   without changing the required-check contract.
 - [ ] [`ticket-009`](project/ticket-009/README.md) — lock Code DSL standard v0.1.0-dev into profiles/dsl-manifest.json standardsLock and mappings.
+- [ ] [`ticket-011`](project/ticket-011/README.md) — adopt published
+  `wellmanifest/new-project` 0.20.2 so verified rewritten-merge receipts
+  release merged ticket projections without closure commits.
 - [ ] Add POA to `standardsLock` only after its updated v1 contract is committed
   at an immutable revision and its exact contract digest can be verified.
 - [ ] Publish reusable adoption guidance and mappings for existing DSL projects.

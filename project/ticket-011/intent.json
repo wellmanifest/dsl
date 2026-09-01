@@ -1,0 +1,89 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-011",
+  "summary": "Adopt new-project 0.20.2 rewritten-merge receipts",
+  "workstream": "governance",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P1",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    ".gitignore",
+    ".governance/manifest.json",
+    ".governance/manifest.lock.json",
+    ".governance/required-checks.json",
+    ".governance/standard-adoption.json",
+    ".governance/ticket-allocation.json",
+    "Dockerfile",
+    "project/ticket-011/**",
+    "TODO.md",
+    "project/TICKETS.md"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": ["docker"],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "8b7007ee223bdba51ec5ca93fc3785ffe8586227",
+    "targetBranch": "main",
+    "outcome": "Adopt published wellmanifest/new-project 0.20.2 with verified rewritten-merge terminal receipts and immutable managed governance",
+    "nonGoals": [
+      "No DSL runtime, schema, profile, standard or product documentation change",
+      "No repository closure commit or ticket-010 prose mutation",
+      "No unpublished or moving standard source",
+      "No automatic deletion, movement or repair of historical worktrees"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 25,
+    "standardAdoption": {
+      "sourceRepository": "wellmanifest/new-project",
+      "fromRevision": "a22eb47ca0e7c06ac927d1c0d843eabb798bfadd",
+      "toRevision": "e992c86fecb1ca9310dae89172eb6ca31bf5a90e"
+    },
+    "budgets": {
+      "maxImplementationFiles": 5,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Use the pinned adoption generator for one atomic managed-package upgrade, preserve target extensions, and release stale status projections only through the verified clone-external receipt registry.",
+      "components": [
+        {
+          "name": "new-project-managed-package",
+          "paths": ["AGENTS.md", "CLAUDE.md", "GEMINI.md", ".aider.conf.yml", ".cursor/**", ".githooks/**", ".github/**", "project/governance-check.bat", "project/governance-check.sh", "project/new-ticket.sh", "scripts/**", "wellmanifest_governance.py", "worktree-guard.yaml"]
+        },
+        {
+          "name": "target-adoption-integration",
+          "paths": [".gitignore", ".governance/**", "Dockerfile"]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Revert the unmerged adoption commit; reconstruct the previous package from the immutable 0.14.0 lock."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-02",
+        "commands": ["create_adoption_lock.py --check", "create_adoption_lock.py --upgrade"],
+        "evidence": "Exact published source revision and generated managed-file lock"
+      },
+      {
+        "criterion": "AC-03",
+        "commands": [".governance/ticket_activity.py record", ".governance/ticket_activity.py resolve"],
+        "evidence": "Receipt-bound inactive resolution for ticket-010"
+      },
+      {
+        "criterion": "AC-04",
+        "commands": ["python3 src/dsl_check.py self-test", "./project/governance-check.sh --actor agent --base 8b7007ee223bdba51ec5ca93fc3785ffe8586227 --head HEAD", "docker build -t wellmanifest-dsl-ticket-011 .", "docker run --rm --network none wellmanifest-dsl-ticket-011 python3 src/dsl_check.py self-test"],
+        "evidence": "Host, exact-range governance and networkless container pass"
+      }
+    ]
+  }
+}
