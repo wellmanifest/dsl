@@ -266,6 +266,7 @@
         "responseSchemas",
         "naturalLanguage",
         "sourceSchema",
+        "decisionProtocol",
         "modelAuthority",
         "strict"
       ],
@@ -283,6 +284,9 @@
         },
         "naturalLanguage": {"enum": ["forbidden", "typed-source-only"]},
         "sourceSchema": {"type": ["string", "null"]},
+        "decisionProtocol": {
+          "enum": ["none", "dsl-input-output", "nl-to-dsl-input-output"]
+        },
         "modelAuthority": {"enum": ["none", "propose-only"]},
         "strict": {"const": true}
       }
