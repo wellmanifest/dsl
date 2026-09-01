@@ -4,3 +4,10 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 reports/
+/worktrees/
+/.subactor/leases/
+/.subactor/sessions/
+/.subactor/recovery/
+/.subactor/receipts/
+/.subactor/cache/
+/.subactor/snapshots/

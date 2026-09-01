@@ -12,23 +12,6 @@ permissions:
   pull-requests: read
 
 jobs:
-  governance:
-    if: >-
-      (github.event_name == 'push' &&
-      github.ref_name == github.event.repository.default_branch) ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request_review' &&
-      (github.event.action == 'submitted' ||
-      (github.event.action == 'dismissed' &&
-      github.event.review.commit_id == github.event.pull_request.head.sha)))
-    permissions:
-      contents: read
-      pull-requests: read
-    uses: wellmanifest/new-project/.github/workflows/governance.yml@a22eb47ca0e7c06ac927d1c0d843eabb798bfadd
-    with:
-      standard-ref: a22eb47ca0e7c06ac927d1c0d843eabb798bfadd
-      trusted-validator-apps: 'ifuri-validator-agent[bot]'
-
   test:
     runs-on: ubuntu-latest
     steps:
@@ -82,35 +65,7 @@ jobs:
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
       - name: Validate required check contract
         shell: bash
-        run: |
-          python3 - <<'PY'
-          import json
-          import re
-          from pathlib import Path
-
-          contract = json.loads(Path('.governance/required-checks.json').read_text())
-          required = contract['requiredCheckNames']
-          workflow = Path('.github/workflows/ci.yml').read_text().splitlines()
-          in_jobs = False
-          jobs = []
-          for line in workflow:
-              if line == 'jobs:':
-                  in_jobs = True
-                  continue
-              if not in_jobs:
-                  continue
-              if line and not line.startswith(' '):
-                  break
-              match = re.fullmatch(r'  ([A-Za-z0-9][A-Za-z0-9_-]*):', line)
-              if match:
-                  jobs.append(match.group(1))
-          published = [job for job in jobs if job != 'governance']
-          if published != required:
-              raise SystemExit(
-                  f'required check drift: required={required!r} published={published!r}'
-              )
-          print(f'required checks PASS: {published}')
-          PY
+        run: python3 .governance/check_required_checks.py --root .
       - name: Validate JSON and JSON Schema contracts
         shell: bash
         run: |
