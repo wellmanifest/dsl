@@ -21,6 +21,10 @@
 - [x] [`ticket-006`](project/ticket-006/README.md) — upgrade the target-owned
   checkout and Python setup actions to immutable Node.js 24-compatible pins
   without changing the required-check contract.
+- [ ] [`ticket-007`](project/ticket-007/README.md) — standardize parser
+  toolchains as replaceable DSL implementation profiles, document them through
+  a conforming Env DSL 1 example, and classify the `new-project` contributor
+  DSL as a separate policy language composed through an adapter.
 - [ ] [`ticket-009`](project/ticket-009/README.md) — lock Code DSL standard v0.1.0-dev into profiles/dsl-manifest.json standardsLock and mappings.
 - [ ] [`ticket-011`](project/ticket-011/README.md) — adopt published
   `wellmanifest/new-project` 0.20.2 so verified rewritten-merge receipts
