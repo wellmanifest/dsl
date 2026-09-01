@@ -1,0 +1,188 @@
+{
+  "schema": "wellmanifest.dsl/profile-fixtures/v1",
+  "documents": [
+    {
+      "schema": "wellmanifest.dsl/profile/delivery-plan/v1",
+      "plan_id": "plan.release",
+      "state": "accepted",
+      "intent_ref": "artifact://wellmanifest.dev/intents/release/r1",
+      "intent_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "target_ref": "target://github.com/wellmanifest/dsl",
+      "accepted_base_revision": "1111111111111111111111111111111111111111",
+      "slices": [
+        {
+          "slice_id": "slice.plan",
+          "outcome": "Bind the accepted execution boundary",
+          "allowed_paths": ["profiles/**"],
+          "depends_on": [],
+          "capability_refs": ["capability://wellmanifest.dev/repository/read/v1"],
+          "effects": ["read_data"],
+          "max_files": 2,
+          "max_minutes": 10
+        },
+        {
+          "slice_id": "slice.implement",
+          "outcome": "Implement the bounded profile change",
+          "allowed_paths": ["profiles/**", "examples/profiles/**"],
+          "depends_on": ["slice.plan"],
+          "capability_refs": ["capability://wellmanifest.dev/repository/write/v1"],
+          "effects": ["local_write"],
+          "max_files": 5,
+          "max_minutes": 30
+        },
+        {
+          "slice_id": "slice.validate",
+          "outcome": "Validate the exact material revision",
+          "allowed_paths": ["tests/**"],
+          "depends_on": ["slice.implement"],
+          "capability_refs": ["capability://wellmanifest.dev/validation/run/v1"],
+          "effects": ["read_data"],
+          "max_files": 2,
+          "max_minutes": 15
+        }
+      ],
+      "authority_granted": false
+    },
+    {
+      "schema": "wellmanifest.dsl/profile/task-split-request/v1",
+      "request_id": "split.release",
+      "plan_ref": "artifact://wellmanifest.dev/plans/release/r1",
+      "plan_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "oversized_slice_id": "slice.implement",
+      "observed_files": 12,
+      "observed_minutes": 45,
+      "limit_files": 5,
+      "limit_minutes": 30,
+      "reason": "file_budget",
+      "propose_only": true
+    },
+    {
+      "schema": "wellmanifest.dsl/profile/task-split-result/v1",
+      "request_id": "split.release",
+      "plan_ref": "artifact://wellmanifest.dev/plans/release/r1",
+      "plan_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "state": "proposed",
+      "supersedes_slice_id": "slice.implement",
+      "replacement_slices": [
+        {
+          "slice_id": "slice.implement.contract",
+          "outcome": "Implement the closed contract",
+          "allowed_paths": ["profiles/**"],
+          "depends_on": ["slice.plan"],
+          "capability_refs": ["capability://wellmanifest.dev/repository/write/v1"],
+          "effects": ["local_write"],
+          "max_files": 3,
+          "max_minutes": 20
+        },
+        {
+          "slice_id": "slice.implement.fixtures",
+          "outcome": "Add deterministic conformance fixtures",
+          "allowed_paths": ["examples/profiles/**", "tests/**"],
+          "depends_on": ["slice.implement.contract"],
+          "capability_refs": ["capability://wellmanifest.dev/repository/write/v1"],
+          "effects": ["local_write"],
+          "max_files": 4,
+          "max_minutes": 20
+        }
+      ],
+      "dependency_rebindings": {
+        "slice.implement": "slice.implement.fixtures"
+      },
+      "authority_granted": false
+    },
+    {
+      "schema": "wellmanifest.dsl/profile/session-checkpoint/v1",
+      "checkpoint_id": "checkpoint.release.1",
+      "session_id": "session.release",
+      "ticket_id": "ticket-014",
+      "branch_ref": "ticket/014-execution-recovery-profiles",
+      "head_revision": "2222222222222222222222222222222222222222",
+      "workspace_ref": "artifact://wellmanifest.dev/workspaces/release/r1",
+      "workspace_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "plan_ref": "artifact://wellmanifest.dev/plans/release/r1",
+      "plan_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "slice_id": "slice.implement.fixtures",
+      "remote_observation_ref": "artifact://wellmanifest.dev/observations/remote/r1",
+      "remote_observation_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "resume_source": "commit",
+      "recorded_at": "2026-09-02T00:00:00Z",
+      "authority_granted": false
+    },
+    {
+      "schema": "wellmanifest.dsl/profile/resume-observation/v1",
+      "observation_id": "resume.release.1",
+      "checkpoint_ref": "artifact://wellmanifest.dev/checkpoints/release/r1",
+      "checkpoint_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "observed_head_revision": "2222222222222222222222222222222222222222",
+      "observed_workspace_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "observed_remote_ref": "artifact://wellmanifest.dev/observations/remote/r1",
+      "observed_remote_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "observed_at": "2026-09-02T00:05:00Z",
+      "read_only": true
+    },
+    {
+      "schema": "wellmanifest.dsl/profile/resume-decision/v1",
+      "decision_id": "resume.release.decision",
+      "checkpoint_ref": "artifact://wellmanifest.dev/checkpoints/release/r1",
+      "checkpoint_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "observation_ref": "artifact://wellmanifest.dev/observations/resume/r1",
+      "observation_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "state": "resume",
+      "reason_codes": ["HEAD_MATCH", "WORKSPACE_MATCH", "REMOTE_MATCH"],
+      "next_slice_id": "slice.implement.fixtures",
+      "authority_granted": false
+    },
+    {
+      "schema": "wellmanifest.dsl/profile/remote-binding-observation/v1",
+      "observation_id": "remote.release.1",
+      "repository_ref": "repository://github.com/wellmanifest/dsl",
+      "remote_name": "origin",
+      "route_id": "route.github.ssh",
+      "account_ref": "account://github.com/release-bot",
+      "fork_relation": "upstream",
+      "default_branch": "main",
+      "head_revision": "3333333333333333333333333333333333333333",
+      "observed_at": "2026-09-02T00:00:00Z",
+      "valid_until": "2026-09-02T00:10:00Z",
+      "read_only": true,
+      "credentials_included": false
+    },
+    {
+      "schema": "wellmanifest.dsl/profile/remote-rebind-decision/v1",
+      "decision_id": "remote.release.rebind",
+      "observation_ref": "artifact://wellmanifest.dev/observations/remote/r1",
+      "observation_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "state": "proposed",
+      "repository_ref": "repository://github.com/wellmanifest/dsl",
+      "remote_name": "origin",
+      "route_id": "route.github.ssh",
+      "account_ref": "account://github.com/release-bot",
+      "reason_codes": ["OBSERVED_BINDING_MATCH"],
+      "propose_only": true,
+      "credentials_selected": false,
+      "authority_granted": false
+    },
+    {
+      "schema": "wellmanifest.dsl/profile/tool-action-request/v1",
+      "action_id": "action.publish",
+      "capability_ref": "capability://wellmanifest.dev/github/pull-request-write/v1",
+      "effects": ["external_write", "credential_use"],
+      "input_ref": "artifact://wellmanifest.dev/actions/publish-input/r1",
+      "input_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+      "input_schema_ref": "schema://wellmanifest.dev/actions/publish/v1",
+      "authority_ref": "artifact://wellmanifest.dev/authority/publish/r1",
+      "propose_only": true
+    },
+    {
+      "schema": "wellmanifest.dsl/profile/tool-action-result/v1",
+      "action_id": "action.publish",
+      "capability_ref": "capability://wellmanifest.dev/github/pull-request-write/v1",
+      "state": "succeeded",
+      "output_ref": "artifact://wellmanifest.dev/actions/publish-output/r1",
+      "output_sha256": "8888888888888888888888888888888888888888888888888888888888888888",
+      "receipt_refs": ["artifact://wellmanifest.dev/receipts/publish/r1"],
+      "terminal": true,
+      "authority_granted": false
+    }
+  ]
+}
