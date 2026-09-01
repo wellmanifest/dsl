@@ -3,7 +3,7 @@
   "schema": "wellmanifest.dsl/manifest/v1",
   "id": "wellmanifest.dsl.profiles",
   "name": "Wellmanifest reusable DSL profiles",
-  "version": "0.1.0-dev",
+  "version": "0.2.0-dev",
   "status": "experimental",
   "purpose": "Closed reusable data contracts and deterministic composition policy for independently governed DSLs",
   "domain": "dsl-governance",
@@ -32,16 +32,18 @@
     "profiles/dsl-manifest.json",
     "profiles/**",
     "docs/**",
+    "examples/profiles/**",
     "schemas/dsl-manifest.schema.json",
     "schemas/commands/**",
     "spec/DSL_STANDARD.md",
-    "src/dsl_check.py"
+    "src/dsl_check.py",
+    "tests/profile_contract_test.py"
   ],
   "artifacts": [
     {
       "path": "profiles/wellmanifest-profiles.schema.json",
       "role": "normative-source",
-      "digest": "sha256:85010d33a3a1a5a311ad73591b0676b184f475d2aa5323bd2e32ef6d7aca3bd1"
+      "digest": "sha256:b607058a8dd2b762002db812472b9e227e520d9820d2d52f89ce586791b9a819"
     },
     {
       "path": "schemas/dsl-manifest.schema.json",
@@ -76,12 +78,32 @@
     {
       "path": "spec/DSL_STANDARD.md",
       "role": "documentation",
-      "digest": "sha256:021023c7f24321f9a04d40bb0f664b29aa639df7efea876cc352d6ddfb34802d"
+      "digest": "sha256:ed53c9229321226aef867567f1a14c656a3c1bb0fc1f993ea4397e183c38acd6"
     },
     {
       "path": "docs/GRAMMAR_TOOLCHAINS.md",
       "role": "documentation",
       "digest": "sha256:e1535e86bec5f71b1a737e3e0f7f2f1099469c21d293a6e7f7579a8faef68f92"
+    },
+    {
+      "path": "docs/EXECUTION_RECOVERY_PROFILES.md",
+      "role": "documentation",
+      "digest": "sha256:41e5e40973f9413e922afca46103e3bb78b2d8278de8554e6927c13e8989750f"
+    },
+    {
+      "path": "examples/profiles/valid/execution-recovery.json",
+      "role": "example",
+      "digest": "sha256:dbc8cc45386bcc1e6780ae9e134dd50316f84463bc471d3c0ed7991c036669f9"
+    },
+    {
+      "path": "examples/profiles/invalid/execution-recovery.json",
+      "role": "example",
+      "digest": "sha256:4e56637a34d8af87355c922660247309c85f583c02cfdc61bdbc060f2bb8a002"
+    },
+    {
+      "path": "tests/profile_contract_test.py",
+      "role": "parser-contract",
+      "digest": "sha256:0395e17069237087a855985125fe2ca90b7717d90019bb76184c263bd905059c"
     },
     {
       "path": "src/dsl_check.py",
@@ -157,10 +179,15 @@
     "commands": [
       "python3 src/dsl_check.py validate profiles/dsl-manifest.json",
       "python3 src/dsl_check.py standards profiles/dsl-manifest.json",
-      "python3 src/dsl_check.py self-test"
+      "python3 src/dsl_check.py self-test",
+      "python3 tests/profile_contract_test.py"
     ],
-    "validExamples": [],
-    "invalidExamples": []
+    "validExamples": [
+      "examples/profiles/valid/execution-recovery.json"
+    ],
+    "invalidExamples": [
+      "examples/profiles/invalid/execution-recovery.json"
+    ]
   },
   "mappings": [
     {

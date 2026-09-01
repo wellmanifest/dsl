@@ -556,7 +556,16 @@ Draft 2020-12 contract in `profiles/wellmanifest-profiles.schema.json` defines:
 - external, plan-bound authority;
 - verification with immutable evidence;
 - terminal LLM exchange audit with application, project, provider, model and
-  account profile identity.
+  account profile identity;
+- an accepted delivery plan compiled into an acyclic graph of bounded work
+  slices, plus propose-only oversized-slice split request/results;
+- session checkpoints, read-only resume observations and deterministic
+  resume/recover/reject decisions;
+- read-only repository/remote/account/fork observations and propose-only
+  remote rebind decisions which carry registry IDs rather than credentials or
+  invented URI routes; and
+- typed tool action request/results bound to one versioned capability ID,
+  declared effects, immutable input/output digests and terminal receipts.
 
 Authored query objects intentionally do not select an account, provider or
 model. The trusted registry owns that choice; the terminal LLM exchange records
@@ -566,3 +575,13 @@ result remains a separately schema-validated and hash-bound artifact.
 Each profile variant is independently named, closed, bounded and versioned.
 Schema validity is evidence only: no profile document grants execution
 authority by itself.
+
+Delivery-plan slice identifiers MUST be unique, every dependency MUST resolve
+inside the accepted plan, and the dependency graph MUST be acyclic. A split
+result MUST preserve the request's plan binding and declare the exact
+dependency rebinding for its superseded slice. Resume decisions MUST bind a
+fresh observation of the referenced checkpoint. Remote decisions MUST repeat
+an observed binding and MUST NOT contain credentials or arbitrary transport
+URIs. Tool results MUST repeat the request action and capability identifiers.
+These joins are deterministic validation rules; an LLM may propose documents
+but MUST NOT decide their validity, authority or execution.

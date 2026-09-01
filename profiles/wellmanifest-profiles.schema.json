@@ -12,7 +12,17 @@
     {"$ref": "#/$defs/operation"},
     {"$ref": "#/$defs/authority"},
     {"$ref": "#/$defs/verification"},
-    {"$ref": "#/$defs/llmExchange"}
+    {"$ref": "#/$defs/llmExchange"},
+    {"$ref": "#/$defs/deliveryPlan"},
+    {"$ref": "#/$defs/taskSplitRequest"},
+    {"$ref": "#/$defs/taskSplitResult"},
+    {"$ref": "#/$defs/sessionCheckpoint"},
+    {"$ref": "#/$defs/resumeObservation"},
+    {"$ref": "#/$defs/resumeDecision"},
+    {"$ref": "#/$defs/remoteBindingObservation"},
+    {"$ref": "#/$defs/remoteRebindDecision"},
+    {"$ref": "#/$defs/toolActionRequest"},
+    {"$ref": "#/$defs/toolActionResult"}
   ],
   "$defs": {
     "stableId": {
@@ -28,6 +38,26 @@
     "sha256Ref": {
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "gitSha1": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "gitRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 320,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/*?-]+$"
+    },
+    "reasonCode": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
     },
     "artifactRef": {
       "type": "string",
@@ -53,6 +83,16 @@
       "type": "string",
       "maxLength": 240,
       "pattern": "^capability://[a-z0-9.-]+/[a-z][a-z0-9._:/-]*/v[1-9][0-9]*$"
+    },
+    "repositoryRef": {
+      "type": "string",
+      "maxLength": 320,
+      "pattern": "^repository://[a-z0-9.-]+/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$"
+    },
+    "accountRef": {
+      "type": "string",
+      "maxLength": 240,
+      "pattern": "^account://[a-z0-9.-]+/[a-z][a-z0-9._:-]*$"
     },
     "effect": {
       "enum": [
@@ -92,6 +132,431 @@
           "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
         }
       }
+    },
+    "workSlice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slice_id",
+        "outcome",
+        "allowed_paths",
+        "depends_on",
+        "capability_refs",
+        "effects",
+        "max_files",
+        "max_minutes"
+      ],
+      "properties": {
+        "slice_id": {"$ref": "#/$defs/stableId"},
+        "outcome": {"type": "string", "minLength": 1, "maxLength": 320},
+        "allowed_paths": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/relativePath"}
+        },
+        "depends_on": {
+          "type": "array",
+          "maxItems": 63,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "capability_refs": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/capabilityRef"}
+        },
+        "effects": {"$ref": "#/$defs/effects"},
+        "max_files": {"type": "integer", "minimum": 1, "maximum": 50},
+        "max_minutes": {"type": "integer", "minimum": 1, "maximum": 240}
+      }
+    },
+    "deliveryPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "plan_id",
+        "state",
+        "intent_ref",
+        "intent_sha256",
+        "target_ref",
+        "accepted_base_revision",
+        "slices",
+        "authority_granted"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/delivery-plan/v1"},
+        "plan_id": {"$ref": "#/$defs/stableId"},
+        "state": {"const": "accepted"},
+        "intent_ref": {"$ref": "#/$defs/artifactRef"},
+        "intent_sha256": {"$ref": "#/$defs/sha256"},
+        "target_ref": {"$ref": "#/$defs/targetRef"},
+        "accepted_base_revision": {"$ref": "#/$defs/gitSha1"},
+        "slices": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/workSlice"}
+        },
+        "authority_granted": {"const": false}
+      }
+    },
+    "taskSplitRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "request_id",
+        "plan_ref",
+        "plan_sha256",
+        "oversized_slice_id",
+        "observed_files",
+        "observed_minutes",
+        "limit_files",
+        "limit_minutes",
+        "reason",
+        "propose_only"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/task-split-request/v1"},
+        "request_id": {"$ref": "#/$defs/stableId"},
+        "plan_ref": {"$ref": "#/$defs/artifactRef"},
+        "plan_sha256": {"$ref": "#/$defs/sha256"},
+        "oversized_slice_id": {"$ref": "#/$defs/stableId"},
+        "observed_files": {"type": "integer", "minimum": 0, "maximum": 100000},
+        "observed_minutes": {"type": "integer", "minimum": 0, "maximum": 100000},
+        "limit_files": {"type": "integer", "minimum": 1, "maximum": 50},
+        "limit_minutes": {"type": "integer", "minimum": 1, "maximum": 240},
+        "reason": {"enum": ["file_budget", "time_budget", "component_boundary", "effect_boundary"]},
+        "propose_only": {"const": true}
+      }
+    },
+    "taskSplitResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "request_id",
+        "plan_ref",
+        "plan_sha256",
+        "state",
+        "supersedes_slice_id",
+        "replacement_slices",
+        "dependency_rebindings",
+        "authority_granted"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/task-split-result/v1"},
+        "request_id": {"$ref": "#/$defs/stableId"},
+        "plan_ref": {"$ref": "#/$defs/artifactRef"},
+        "plan_sha256": {"$ref": "#/$defs/sha256"},
+        "state": {"enum": ["proposed", "rejected"]},
+        "supersedes_slice_id": {"$ref": "#/$defs/stableId"},
+        "replacement_slices": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/workSlice"}
+        },
+        "dependency_rebindings": {
+          "type": "object",
+          "maxProperties": 64,
+          "propertyNames": {"$ref": "#/$defs/stableId"},
+          "additionalProperties": {"$ref": "#/$defs/stableId"}
+        },
+        "authority_granted": {"const": false}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"state": {"const": "proposed"}}, "required": ["state"]},
+          "then": {"properties": {"replacement_slices": {"minItems": 2}}},
+          "else": {
+            "properties": {
+              "replacement_slices": {"maxItems": 0},
+              "dependency_rebindings": {"maxProperties": 0}
+            }
+          }
+        }
+      ]
+    },
+    "sessionCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "checkpoint_id",
+        "session_id",
+        "ticket_id",
+        "branch_ref",
+        "head_revision",
+        "workspace_ref",
+        "workspace_sha256",
+        "plan_ref",
+        "plan_sha256",
+        "slice_id",
+        "remote_observation_ref",
+        "remote_observation_sha256",
+        "resume_source",
+        "recorded_at",
+        "authority_granted"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/session-checkpoint/v1"},
+        "checkpoint_id": {"$ref": "#/$defs/stableId"},
+        "session_id": {"$ref": "#/$defs/stableId"},
+        "ticket_id": {"type": "string", "pattern": "^ticket-[0-9]{3,}$"},
+        "branch_ref": {"$ref": "#/$defs/gitRef"},
+        "head_revision": {"$ref": "#/$defs/gitSha1"},
+        "workspace_ref": {"$ref": "#/$defs/artifactRef"},
+        "workspace_sha256": {"$ref": "#/$defs/sha256"},
+        "plan_ref": {"$ref": "#/$defs/artifactRef"},
+        "plan_sha256": {"$ref": "#/$defs/sha256"},
+        "slice_id": {"$ref": "#/$defs/stableId"},
+        "remote_observation_ref": {"$ref": "#/$defs/artifactRef"},
+        "remote_observation_sha256": {"$ref": "#/$defs/sha256"},
+        "resume_source": {"enum": ["commit", "snapshot"]},
+        "recorded_at": {"type": "string", "format": "date-time", "maxLength": 40},
+        "authority_granted": {"const": false}
+      }
+    },
+    "resumeObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "observation_id",
+        "checkpoint_ref",
+        "checkpoint_sha256",
+        "observed_head_revision",
+        "observed_workspace_sha256",
+        "observed_remote_ref",
+        "observed_remote_sha256",
+        "observed_at",
+        "read_only"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/resume-observation/v1"},
+        "observation_id": {"$ref": "#/$defs/stableId"},
+        "checkpoint_ref": {"$ref": "#/$defs/artifactRef"},
+        "checkpoint_sha256": {"$ref": "#/$defs/sha256"},
+        "observed_head_revision": {"$ref": "#/$defs/gitSha1"},
+        "observed_workspace_sha256": {"$ref": "#/$defs/sha256"},
+        "observed_remote_ref": {"$ref": "#/$defs/artifactRef"},
+        "observed_remote_sha256": {"$ref": "#/$defs/sha256"},
+        "observed_at": {"type": "string", "format": "date-time", "maxLength": 40},
+        "read_only": {"const": true}
+      }
+    },
+    "resumeDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "decision_id",
+        "checkpoint_ref",
+        "checkpoint_sha256",
+        "observation_ref",
+        "observation_sha256",
+        "state",
+        "reason_codes",
+        "next_slice_id",
+        "authority_granted"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/resume-decision/v1"},
+        "decision_id": {"$ref": "#/$defs/stableId"},
+        "checkpoint_ref": {"$ref": "#/$defs/artifactRef"},
+        "checkpoint_sha256": {"$ref": "#/$defs/sha256"},
+        "observation_ref": {"$ref": "#/$defs/artifactRef"},
+        "observation_sha256": {"$ref": "#/$defs/sha256"},
+        "state": {"enum": ["resume", "recover", "reject"]},
+        "reason_codes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/reasonCode"}
+        },
+        "next_slice_id": {
+          "oneOf": [{"$ref": "#/$defs/stableId"}, {"type": "null"}]
+        },
+        "authority_granted": {"const": false}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"state": {"const": "reject"}}, "required": ["state"]},
+          "then": {"properties": {"next_slice_id": {"type": "null"}}},
+          "else": {"properties": {"next_slice_id": {"$ref": "#/$defs/stableId"}}}
+        }
+      ]
+    },
+    "remoteBindingObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "observation_id",
+        "repository_ref",
+        "remote_name",
+        "route_id",
+        "account_ref",
+        "fork_relation",
+        "default_branch",
+        "head_revision",
+        "observed_at",
+        "valid_until",
+        "read_only",
+        "credentials_included"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/remote-binding-observation/v1"},
+        "observation_id": {"$ref": "#/$defs/stableId"},
+        "repository_ref": {"$ref": "#/$defs/repositoryRef"},
+        "remote_name": {"$ref": "#/$defs/stableId"},
+        "route_id": {"$ref": "#/$defs/stableId"},
+        "account_ref": {"$ref": "#/$defs/accountRef"},
+        "fork_relation": {"enum": ["upstream", "owned-fork", "third-party-fork"]},
+        "default_branch": {"$ref": "#/$defs/gitRef"},
+        "head_revision": {"$ref": "#/$defs/gitSha1"},
+        "observed_at": {"type": "string", "format": "date-time", "maxLength": 40},
+        "valid_until": {"type": "string", "format": "date-time", "maxLength": 40},
+        "read_only": {"const": true},
+        "credentials_included": {"const": false}
+      }
+    },
+    "remoteRebindDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "decision_id",
+        "observation_ref",
+        "observation_sha256",
+        "state",
+        "repository_ref",
+        "remote_name",
+        "route_id",
+        "account_ref",
+        "reason_codes",
+        "propose_only",
+        "credentials_selected",
+        "authority_granted"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/remote-rebind-decision/v1"},
+        "decision_id": {"$ref": "#/$defs/stableId"},
+        "observation_ref": {"$ref": "#/$defs/artifactRef"},
+        "observation_sha256": {"$ref": "#/$defs/sha256"},
+        "state": {"enum": ["proposed", "rejected"]},
+        "repository_ref": {"$ref": "#/$defs/repositoryRef"},
+        "remote_name": {"$ref": "#/$defs/stableId"},
+        "route_id": {"$ref": "#/$defs/stableId"},
+        "account_ref": {"$ref": "#/$defs/accountRef"},
+        "reason_codes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/reasonCode"}
+        },
+        "propose_only": {"const": true},
+        "credentials_selected": {"const": false},
+        "authority_granted": {"const": false}
+      }
+    },
+    "toolActionRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "action_id",
+        "capability_ref",
+        "effects",
+        "input_ref",
+        "input_sha256",
+        "input_schema_ref",
+        "authority_ref",
+        "propose_only"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/tool-action-request/v1"},
+        "action_id": {"$ref": "#/$defs/stableId"},
+        "capability_ref": {"$ref": "#/$defs/capabilityRef"},
+        "effects": {"$ref": "#/$defs/effects"},
+        "input_ref": {"$ref": "#/$defs/artifactRef"},
+        "input_sha256": {"$ref": "#/$defs/sha256"},
+        "input_schema_ref": {"$ref": "#/$defs/schemaRef"},
+        "authority_ref": {
+          "oneOf": [{"$ref": "#/$defs/artifactRef"}, {"type": "null"}]
+        },
+        "propose_only": {"const": true}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "effects": {
+                "contains": {
+                  "enum": ["external_write", "credential_use", "quota_consumption", "remote_session", "destructive"]
+                }
+              }
+            },
+            "required": ["effects"]
+          },
+          "then": {"properties": {"authority_ref": {"$ref": "#/$defs/artifactRef"}}}
+        }
+      ]
+    },
+    "toolActionResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "action_id",
+        "capability_ref",
+        "state",
+        "output_ref",
+        "output_sha256",
+        "receipt_refs",
+        "terminal",
+        "authority_granted"
+      ],
+      "properties": {
+        "schema": {"const": "wellmanifest.dsl/profile/tool-action-result/v1"},
+        "action_id": {"$ref": "#/$defs/stableId"},
+        "capability_ref": {"$ref": "#/$defs/capabilityRef"},
+        "state": {"enum": ["succeeded", "failed", "cancelled", "timed_out", "denied"]},
+        "output_ref": {
+          "oneOf": [{"$ref": "#/$defs/artifactRef"}, {"type": "null"}]
+        },
+        "output_sha256": {
+          "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+        },
+        "receipt_refs": {"$ref": "#/$defs/artifactRefs"},
+        "terminal": {"const": true},
+        "authority_granted": {"const": false}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"state": {"const": "succeeded"}}, "required": ["state"]},
+          "then": {
+            "properties": {
+              "output_ref": {"$ref": "#/$defs/artifactRef"},
+              "output_sha256": {"$ref": "#/$defs/sha256"}
+            }
+          },
+          "else": {
+            "properties": {
+              "output_ref": {"type": "null"},
+              "output_sha256": {"type": "null"}
+            }
+          }
+        }
+      ]
     },
     "source": {
       "type": "object",

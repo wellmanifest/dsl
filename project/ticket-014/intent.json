@@ -1,0 +1,84 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-014",
+  "summary": "Define execution recovery profiles",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P1",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "project/ticket-014/**",
+    "project/TICKETS.md",
+    "profiles/wellmanifest-profiles.schema.json",
+    "profiles/dsl-manifest.json",
+    "examples/profiles/**",
+    "tests/profile_contract_test.py",
+    "docs/EXECUTION_RECOVERY_PROFILES.md",
+    "spec/DSL_STANDARD.md"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": ["docker"],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "6d316f47ff8c2f52959738816e75e825146fe749",
+    "targetBranch": "main",
+    "outcome": "Publish closed delivery-plan, split, recovery, remote-rebind and typed tool action profiles with deterministic graph and binding conformance",
+    "nonGoals": [
+      "No credential selection, remote mutation, capability execution or authority grant",
+      "No LLM validity, acceptance or execution decision",
+      "No governance package, CI workflow or external repository change",
+      "No parser or production runtime dependency"
+    ],
+    "complexity": "M",
+    "estimatedMinutes": 60,
+    "budgets": {
+      "maxImplementationFiles": 7,
+      "maxAffectedComponents": 3,
+      "maxPublicInterfaceChanges": 1,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Extend the existing closed profile-family schema with independently discriminated v1 documents, keep non-JSON-Schema graph and cross-document joins in a deterministic fixture validator, and document authority as a separate trusted-runtime boundary.",
+      "components": [
+        {
+          "name": "execution-recovery-contract",
+          "paths": ["profiles/wellmanifest-profiles.schema.json", "profiles/dsl-manifest.json"]
+        },
+        {
+          "name": "profile-conformance",
+          "paths": ["examples/profiles/**", "tests/profile_contract_test.py"]
+        },
+        {
+          "name": "normative-guidance",
+          "paths": ["docs/EXECUTION_RECOVERY_PROFILES.md", "spec/DSL_STANDARD.md"]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [
+        "Add ten closed wellmanifest.dsl/profile/*/v1 document discriminators to the reusable profile family"
+      ],
+      "dataChanges": [],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Revert the unmerged atomic commit; retain issue #19 and its fixtures as the bounded design record."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-05",
+        "commands": [
+          "python3 tests/profile_contract_test.py",
+          "python3 src/dsl_check.py validate profiles/dsl-manifest.json",
+          "python3 src/dsl_check.py standards profiles/dsl-manifest.json",
+          "python3 src/dsl_check.py self-test",
+          "./project/governance-check.sh --actor agent --base 6d316f47ff8c2f52959738816e75e825146fe749 --head HEAD"
+        ],
+        "evidence": "Closed schema, 10 valid documents, 5 invalid cases, exact artifact digests and protected validation"
+      }
+    ]
+  }
+}

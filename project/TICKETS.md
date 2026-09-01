@@ -15,4 +15,6 @@ This file indexes governance tickets without taking ownership of
 | **ticket-009** | [`README.md`](./ticket-009/README.md) | [`preprompt.md`](./ticket-009/preprompt.md) | - |  [`ai-gemini.md`](./ticket-009/ai-gemini.md) |  [`ai-gemini-logs.txt`](./ticket-009/ai-gemini-logs.txt) | [`changelog.md`](./ticket-009/changelog.md) |
 | **ticket-010** | [`README.md`](./ticket-010/README.md) | [`preprompt.md`](./ticket-010/preprompt.md) | - |  [`ai-codex.md`](./ticket-010/ai-codex.md) |  [`ai-codex-logs.txt`](./ticket-010/ai-codex-logs.txt) | [`changelog.md`](./ticket-010/changelog.md) |
 | **ticket-011** | [`README.md`](./ticket-011/README.md) | [`preprompt.md`](./ticket-011/preprompt.md) | - |  [`ai-codex.md`](./ticket-011/ai-codex.md) |  [`ai-codex-logs.txt`](./ticket-011/ai-codex-logs.txt) | [`changelog.md`](./ticket-011/changelog.md) |
+| **ticket-013** | [`README.md`](./ticket-013/README.md) | - | - | - | - | - |
+| **ticket-014** | [`README.md`](./ticket-014/README.md) | - | - | - | - | - |
 <!-- AUTO:TICKET_INDEX:END -->
