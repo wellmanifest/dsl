@@ -29,7 +29,7 @@
   "delivery": {
     "acceptedBaseSha": "8b7007ee223bdba51ec5ca93fc3785ffe8586227",
     "targetBranch": "main",
-    "outcome": "Adopt published wellmanifest/new-project 0.20.3 with verified rewritten-merge receipts, immutable managed governance and a digest-bound CI workflow migration",
+    "outcome": "Adopt published wellmanifest/new-project 0.20.3 with verified rewritten-merge receipts, immutable managed governance, a digest-bound CI workflow migration and the Git runtime required by worktree receipt resolution",
     "nonGoals": [
       "No DSL runtime, schema, profile, standard or product documentation change",
       "No repository closure commit or ticket-010 prose mutation",
@@ -54,7 +54,7 @@
       "maxImplementationFiles": 5,
       "maxAffectedComponents": 2,
       "maxPublicInterfaceChanges": 1,
-      "maxRuntimeDependencies": 0
+      "maxRuntimeDependencies": 1
     },
     "architecture": {
       "status": "accepted",
@@ -75,7 +75,9 @@
       "ui": {"impact": "none", "states": [], "evidence": []},
       "rollback": "Revert the unmerged adoption commit; reconstruct the previous package from the immutable 0.14.0 lock."
     },
-    "runtimeDependencies": [],
+    "runtimeDependencies": [
+      "Alpine git package for worktree-aware governance inside the networkless runtime container"
+    ],
     "validation": [
       {
         "criterion": "AC-02",
