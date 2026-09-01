@@ -1,0 +1,97 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-007",
+  "summary": "Standardize grammar toolchains and Env DSL composition",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P1",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "project/ticket-007/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "spec/DSL_STANDARD.md",
+    "docs/GRAMMAR_TOOLCHAINS.md",
+    "profiles/dsl-manifest.json"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md",
+    "schemas/**",
+    "src/**",
+    "tests/**",
+    ".github/**",
+    ".governance/**",
+    "AGENTS.md",
+    "Dockerfile",
+    "compose.yml"
+  ],
+  "stacks": ["docker"],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "7a15781aa859f9e02ffe03dbf6e14bea1e286c95",
+    "targetBranch": "main",
+    "outcome": "Normative parser-toolchain guidance and an accurate Env DSL composition model for the new-project contributor DSL",
+    "nonGoals": [
+      "Modify env-dsl or new-project",
+      "Add parser dependencies or choose one mandatory engine",
+      "Change schemas, runtime code or public interfaces",
+      "Grant execution or approval authority to a parser, DSL document or LLM"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 25,
+    "budgets": {
+      "maxImplementationFiles": 3,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Treat parser libraries as replaceable implementation profiles, use Env DSL only for inert typed selection inputs, and keep the new-project Policy/Procedure DSL as a separate declarative-policy language joined by an adapter.",
+      "components": [
+        {
+          "name": "normative-standard",
+          "paths": ["spec/DSL_STANDARD.md"]
+        },
+        {
+          "name": "adoption-guidance-and-dogfooding",
+          "paths": ["docs/GRAMMAR_TOOLCHAINS.md", "profiles/dsl-manifest.json"]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Remove the guidance, revert the normative clarification and restore the previous manifest artifact bindings."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-03",
+        "commands": ["manual link and claim review against official upstream documentation"],
+        "evidence": "project/ticket-007/ai-codex.md"
+      },
+      {
+        "criterion": "AC-04",
+        "commands": ["validate the documented example against env-dsl.abnf and ENV_DSL.md"],
+        "evidence": "project/ticket-007/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-07",
+        "commands": [
+          "python3 src/dsl_check.py self-test",
+          "python3 src/dsl_check.py validate profiles/dsl-manifest.json",
+          "python3 src/dsl_check.py standards profiles/dsl-manifest.json",
+          "./project/governance-check.sh --actor agent",
+          "docker compose build",
+          "docker compose run --rm --network none dsl-check self-test"
+        ],
+        "evidence": "project/ticket-007/ai-codex-logs.txt"
+      }
+    ]
+  }
+}
