@@ -121,18 +121,12 @@ jobs:
         run: |
           set -euo pipefail
           docker build -t wellmanifest-dsl-ci .
-          changed_args=()
+          governance_args=()
           case "$VALIDATION_MODE" in
             range)
-              while IFS= read -r -d '' path; do
-                changed_args+=(--changed-file "$path")
-              done < <(git diff --name-only -z "$BASE_SHA...$HEAD_SHA")
-              if [[ "${#changed_args[@]}" -eq 0 ]]; then
-                echo 'protected change set is empty' >&2
-                exit 1
-              fi
+              governance_args+=(--base "$BASE_SHA" --head "$HEAD_SHA")
               ;;
-            repository) changed_args+=(--changed-file project/TICKETS.md) ;;
+            repository) governance_args+=(--changed-file project/TICKETS.md) ;;
             *) echo "unknown validation mode: $VALIDATION_MODE" >&2; exit 1 ;;
           esac
           docker run --rm --network none wellmanifest-dsl-ci \
@@ -142,7 +136,7 @@ jobs:
               --lock .governance/manifest.lock.json \
               --stack-profiles .governance/stack-profiles.json \
               --actor ci \
-              "${changed_args[@]}"
+              "${governance_args[@]}"
           if [[ -f src/dsl_check.py ]]; then
             docker run --rm --network none wellmanifest-dsl-ci \
               python3 src/dsl_check.py self-test
