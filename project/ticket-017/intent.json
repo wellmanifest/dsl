@@ -1,0 +1,81 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-017",
+  "summary": "Keep DSL discovery within the selected repository",
+  "workstream": "integration",
+  "classification": {
+    "kind": "BUG",
+    "priority": "P1",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-017/**",
+    "src/dsl_check.py",
+    "profiles/dsl-manifest.json"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "6c60fc4e0dd1f1bb74f46a7745e28019908d1203",
+    "targetBranch": "main",
+    "outcome": "Repository DSL validation does not discover duplicate manifests from nested checkouts or operational recovery storage.",
+    "nonGoals": [
+      "Change workspace auditing or approval rules",
+      "Ignore ordinary monorepo packages",
+      "Migrate downstream repositories before upstream publication"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 45,
+    "budgets": {
+      "maxImplementationFiles": 5,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 1,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Keep recursive discovery bounded to its explicitly selected repository; explicit targets retain independent validation.",
+      "components": [
+        {
+          "name": "checker",
+          "paths": [
+            "src/dsl_check.py"
+          ]
+        },
+        {
+          "name": "profile",
+          "paths": [
+            "profiles/dsl-manifest.json"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [
+        "Directory discovery stops at nested Git checkout boundaries and reserved operational storage."
+      ],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the bounded discovery change and matching checker artifact digest through protected publication."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-02",
+        "commands": [
+          "python3 src/dsl_check.py self-test",
+          "python3 src/dsl_check.py validate profiles/dsl-manifest.json"
+        ],
+        "evidence": "Built-in discovery regression cases run in the existing Linux, Windows and container verification lanes."
+      }
+    ]
+  }
+}

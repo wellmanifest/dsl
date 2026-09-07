@@ -1248,6 +1248,11 @@ def validate_manifest(
 
 
 def discover_manifests(root: Path) -> list[Path]:
+    """Discover one selected tree without absorbing other checkout identities.
+
+    A nested checkout or saved snapshot can still be validated by selecting it
+    explicitly. Ordinary monorepo packages remain part of recursive discovery.
+    """
     ignored = {
         ".git",
         ".venv",
@@ -1257,9 +1262,18 @@ def discover_manifests(root: Path) -> list[Path]:
         "build",
         "__pycache__",
     }
+    operational = {"leases", "sessions", "recovery", "receipts", "cache", "snapshots"}
     found: list[Path] = []
     for current, directories, files in os.walk(root):
-        directories[:] = sorted(item for item in directories if item not in ignored)
+        current_path = Path(current)
+        directories[:] = sorted(
+            item
+            for item in directories
+            if item not in ignored
+            and not (current_path == root and item in {"worktrees", ".worktrees"})
+            and not (current_path == root / ".subactor" and item in operational)
+            and not (current_path / item / ".git").exists()
+        )
         if MANIFEST_NAME in files:
             found.append(Path(current) / MANIFEST_NAME)
     return sorted(found)
@@ -1945,6 +1959,43 @@ def valid_example_document(
 
 def self_test() -> int:
     failures: list[str] = []
+    with tempfile.TemporaryDirectory(prefix="wellmanifest-dsl-discovery-") as temporary:
+        root = Path(temporary)
+        included = [root / MANIFEST_NAME, root / "packages" / "example" / MANIFEST_NAME]
+        included.append(root / "packages" / "worktrees" / MANIFEST_NAME)
+        excluded = [
+            root / ".worktrees" / "ticket-001" / MANIFEST_NAME,
+            root / "worktrees" / "ticket-002" / MANIFEST_NAME,
+            root / ".subactor" / "recovery" / "snapshot" / MANIFEST_NAME,
+            root / ".subactor" / "sessions" / "example" / MANIFEST_NAME,
+            root / ".subactor" / "cache" / "checkout" / MANIFEST_NAME,
+            root / ".subactor" / "snapshots" / "saved" / MANIFEST_NAME,
+            root / ".subactor" / "receipts" / "saved" / MANIFEST_NAME,
+            root / ".subactor" / "leases" / "saved" / MANIFEST_NAME,
+        ]
+        included.append(root / ".subactor" / "contracts" / MANIFEST_NAME)
+        linked = root / "other" / "linked"
+        clone = root / "other" / "clone"
+        for path in [
+            *included,
+            *excluded,
+            linked / MANIFEST_NAME,
+            clone / MANIFEST_NAME,
+        ]:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("{}\n", encoding="utf-8")
+        (root / ".git").mkdir()
+        (linked / ".git").write_text("gitdir: ../../metadata\n", encoding="utf-8")
+        (clone / ".git").mkdir()
+        if discover_manifests(root) != sorted(included):
+            failures.append(
+                "repository discovery crossed a checkout or operational boundary"
+            )
+        for checkout in [linked, clone, excluded[2].parent]:
+            if discover_manifests(checkout) != [checkout / MANIFEST_NAME]:
+                failures.append(
+                    "explicit nested checkout or snapshot discovery was rejected"
+                )
     with tempfile.TemporaryDirectory(prefix="wellmanifest-dsl-") as temporary:
         root = Path(temporary)
         source = root / "CONTRIBUTING.md"
