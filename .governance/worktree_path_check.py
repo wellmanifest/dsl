@@ -1,4 +1,4 @@
-"""Planner, validator and read-only inventory for wellmanifest.worktrees/v4."""
+"""Planner, validator and read-only inventory for wellmanifest.worktrees/v5."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from collections.abc import Callable, Iterable
 from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 from typing import Any
 
-SCHEMA = "wellmanifest.worktrees/v4"
+SCHEMA = "wellmanifest.worktrees/v5"
 MINIMUM_GIT_VERSION = "2.51.0"
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 TICKET_RE = re.compile(r"^ticket-([0-9]{3,})$")
@@ -34,6 +34,16 @@ def _validate_segment(label: str, value: str) -> None:
         raise ValueError(f"{label} must contain lowercase ASCII words separated by hyphens")
 
 
+def _validate_repository_name(repository_name: str) -> None:
+    if (
+        not isinstance(repository_name, str)
+        or not repository_name
+        or repository_name in {".", ".."}
+        or any(character in repository_name for character in ("/", "\\", "\0"))
+    ):
+        raise ValueError("repositoryName must be an observed repository basename")
+
+
 def plan(
     *,
     repository: str,
@@ -43,8 +53,8 @@ def plan(
     primary_checkout: str,
     path_style: str = "posix",
 ) -> dict[str, str]:
-    """Return the canonical v4 layout record for one delivery unit."""
-    _validate_segment("repositoryName", repository_name)
+    """Return the canonical v5 layout record for one delivery unit."""
+    _validate_repository_name(repository_name)
     _validate_segment("slug", slug)
     ticket_match = TICKET_RE.fullmatch(ticket)
     if not ticket_match:
@@ -55,7 +65,7 @@ def plan(
     if not primary.is_absolute():
         raise ValueError("primaryCheckout must be absolute")
     stem = f"{ticket}--{slug}"
-    worktrees_root = primary / "worktrees"
+    worktrees_root = primary / ".worktrees"
     lease_root = primary / ".subactor" / "leases"
     return {
         "schema": SCHEMA,
@@ -111,7 +121,7 @@ def validate_layout(record: dict[str, Any]) -> list[str]:
 
 
 def validate(record: dict[str, Any]) -> list[str]:
-    """Validate either public v4 record kind."""
+    """Validate either public v5 record kind."""
     if record.get("kind") == "layout-record":
         return validate_layout(record)
     if record.get("kind") == "inventory-record":
@@ -248,9 +258,13 @@ def classify_path(
     if candidate == primary:
         classification = "primary"
     elif (
+        value := _direct_child_stem(candidate, primary / ".worktrees")
+    ) and STEM_RE.fullmatch(value):
+        classification, layout_version, stem = "canonical-v5", "v5", value
+    elif (
         value := _direct_child_stem(candidate, primary / "worktrees")
     ) and STEM_RE.fullmatch(value):
-        classification, layout_version, stem = "canonical-v4", "v4", value
+        classification, layout_version, stem = "legacy-v4", "v4", value
     elif (
         value := _direct_child_stem(
             candidate, workspace / ".worktrees" / ".branches" / repository_name
@@ -299,7 +313,7 @@ def inventory(
     path_style: str = "posix",
 ) -> dict[str, Any]:
     """Build a deterministic, observation-only inventory record."""
-    _validate_segment("repositoryName", repository_name)
+    _validate_repository_name(repository_name)
     path_type = _path_type(path_style)
     primary = path_type(primary_checkout)
     if not primary.is_absolute():
@@ -418,9 +432,19 @@ def _version_tuple(value: str) -> tuple[int, int, int]:
 def feature_probe(
     git: str = "git",
     runner: Callable[..., subprocess.CompletedProcess[bytes]] = subprocess.run,
+    *,
+    from_worktree: str = ".",
 ) -> dict[str, Any]:
-    """Probe both the minimum version and required relative-path options."""
-    version_result = runner([git, "--version"], check=False, capture_output=True)
+    """Probe Git in the chosen repository, without mutating caller state."""
+    # Hooks and concurrent hosts may inherit selectors for another checkout.
+    # The explicit cwd owns this read-only observation, not those selectors.
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    context = runner(
+        [git, "-C", from_worktree, "rev-parse", "--git-dir"],
+        check=False, capture_output=True, env=env,
+    )
+    context_ok = context.returncode == 0
+    version_result = runner([git, "--version"], check=False, capture_output=True, env=env)
     version_text = (version_result.stdout + version_result.stderr).decode(
         "utf-8", "replace"
     ).strip()
@@ -434,12 +458,19 @@ def feature_probe(
 
     options: dict[str, bool] = {}
     for command in ("add", "repair"):
-        result = runner([git, "worktree", command, "-h"], check=False, capture_output=True)
-        help_text = (result.stdout + result.stderr).decode("utf-8", "replace")
-        options[command] = "relative-paths" in help_text
+        options[command] = False
+        if context_ok:
+            result = runner(
+                [git, "-C", from_worktree, "worktree", command, "-h"],
+                check=False, capture_output=True, env=env,
+            )
+            help_text = (result.stdout + result.stderr).decode("utf-8", "replace")
+            options[command] = result.returncode in (0, 129) and "relative-paths" in help_text
     supported = version_ok and all(options.values())
     return {
         "minimumGitVersion": MINIMUM_GIT_VERSION,
+        "repositoryContextValid": context_ok,
+        "probeError": None if context_ok else "repository_context_unavailable",
         "gitVersion": version_text,
         "versionSupported": version_ok,
         "worktreeAddRelativePaths": options["add"],
@@ -484,6 +515,8 @@ def main() -> int:
 
     probe = subparsers.add_parser("feature-probe")
     probe.add_argument("--git", default="git")
+    probe.add_argument("--from-worktree", default=".",
+                       help="Repository to probe; independent of the caller cwd")
 
     args = parser.parse_args()
     if args.command == "plan":
@@ -518,7 +551,7 @@ def main() -> int:
         print(json.dumps(record, indent=2))
         return 0
 
-    result = feature_probe(args.git)
+    result = feature_probe(args.git, from_worktree=args.from_worktree)
     print(json.dumps(result, indent=2))
     return 0 if result["supported"] else 1
 

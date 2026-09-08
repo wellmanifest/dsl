@@ -34,8 +34,8 @@ run_local_standard_pin_check() {
     return 1
   fi
 
-  # Reads only the staged local manifest, adoption lock and managed digests.
-  # Freshness belongs to the explicit adoption updater/bot, never this hook.
+  # Commits read only staged local manifests and managed digests. Resolve a
+  # newer release explicitly in its adoption ticket, outside this boundary.
   python3 "$runner" verify-pin --root "$root" --staged >/dev/null
 }
 
