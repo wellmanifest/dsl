@@ -98,7 +98,7 @@ class AuditError(RuntimeError):
 
 
 def load_worktrees_contract():
-    """Load the exact managed Worktrees v4 inventory without bytecode writes."""
+    """Load the exact managed Worktrees inventory without bytecode writes."""
     script = Path(__file__).resolve()
     candidates = (
         script.with_name("worktree_path_check.py"),
@@ -106,10 +106,10 @@ def load_worktrees_contract():
     )
     source = next((candidate for candidate in candidates if candidate.is_file()), None)
     if source is None:
-        raise AuditError("the managed Worktrees v4 conformance module is missing")
-    spec = importlib.util.spec_from_file_location("overlap_worktrees_v4", source)
+        raise AuditError("the managed Worktrees conformance module is missing")
+    spec = importlib.util.spec_from_file_location("overlap_worktrees_contract", source)
     if spec is None or spec.loader is None:
-        raise AuditError(f"cannot load Worktrees v4 conformance from {source}")
+        raise AuditError(f"cannot load Worktrees conformance from {source}")
     module = importlib.util.module_from_spec(spec)
     previous = sys.dont_write_bytecode
     sys.dont_write_bytecode = True
@@ -117,7 +117,7 @@ def load_worktrees_contract():
         sys.modules[spec.name] = module
         spec.loader.exec_module(module)
     except (ImportError, OSError, ValueError) as error:
-        raise AuditError(f"cannot load Worktrees v4 conformance: {error}") from error
+        raise AuditError(f"cannot load Worktrees conformance: {error}") from error
     finally:
         sys.dont_write_bytecode = previous
         sys.modules.pop(spec.name, None)
@@ -203,7 +203,10 @@ def repository_identity(root: Path, seen: set[Path] | None = None) -> str:
     except AuditError as error:
         if "No such remote" not in str(error):
             raise
-        return f"local-repository:{resolved}"
+        # Linked checkouts before remote creation still share a repository.
+        # Their different working directories must not hide competing writes.
+        common = Path(run_git(resolved, "rev-parse", "--path-format=absolute", "--git-common-dir")).resolve()
+        return f"local-repository:{common}"
     local = local_remote_path(resolved, remote)
     if local is not None and (local / ".git").exists():
         return repository_identity(local, visited)
@@ -262,9 +265,9 @@ def workspace_inventory(checkouts: list[Checkout]) -> dict[str, Any]:
                 path_style=path_style,
             )
         except (TypeError, ValueError) as error:
-            raise AuditError(f"Worktrees v4 inventory failed: {error}") from error
+            raise AuditError(f"Worktrees inventory failed: {error}") from error
         if observed.get("readOnly") is not True:
-            raise AuditError("Worktrees v4 inventory did not declare readOnly=true")
+            raise AuditError("Worktrees inventory did not declare readOnly=true")
         for entry in observed["entries"]:
             layout_entries[Path(entry["path"])] = entry
 
@@ -276,7 +279,7 @@ def workspace_inventory(checkouts: list[Checkout]) -> dict[str, Any]:
     for checkout in sorted(checkouts, key=lambda item: str(item.path)):
         layout = layout_entries.get(checkout.path)
         if layout is None:
-            raise AuditError(f"Worktrees v4 inventory omitted {checkout.path}")
+            raise AuditError(f"Worktrees inventory omitted {checkout.path}")
         duplicate = checkout.common_git_dir != authoritative_clone[checkout.identity]
         anomalies = list(layout["anomalies"])
         if duplicate:
@@ -294,7 +297,7 @@ def workspace_inventory(checkouts: list[Checkout]) -> dict[str, Any]:
             "cloneClassification": "duplicate-clone" if duplicate else "registered",
             "anomalies": sorted(set(anomalies)),
         })
-    return {"schema": "wellmanifest.worktrees/v4", "readOnly": True, "entries": entries}
+    return {"schema": contract.SCHEMA, "readOnly": True, "entries": entries}
 
 
 def path_ignored(relative: str, ignore: tuple[str, ...]) -> bool:
@@ -437,20 +440,69 @@ def merge_tree_conflicts(path: Path, left: str, right: str) -> tuple[str, ...] |
     return tuple(sorted(set(conflicted)))
 
 
+def pending_main_imports(path: Path) -> set[str]:
+    """Clean staged imports from the current origin default branch, if proven.
+
+    An unfinished merge exposes already integrated main content as index edits.
+    It is not a competing contribution. Keep reporting that dirty state, but
+    exclude it from overlap attribution only when all local Git reads agree.
+    No fetch or index mutation is needed; unknown or older merge heads retain
+    conservative behavior. Committed feature edits are never exempted.
+    """
+    try:
+        incoming = run_git(path, "rev-parse", "--verify", "MERGE_HEAD")
+        merge_file = Path(run_git(path, "rev-parse", "--path-format=absolute", "--git-path", "MERGE_HEAD"))
+        if merge_file.read_text(encoding="ascii").splitlines() != [incoming]:
+            return set()  # Octopus merges have more than one source of edits.
+        remote = run_git(path, "rev-parse", "--verify",
+                         f"refs/remotes/origin/{default_branch(path)}")
+        if not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", incoming) or incoming != remote:
+            return set()
+        base = run_git(path, "merge-base", "HEAD", incoming)
+
+        def names(*args: str) -> set[str]:
+            return set(run_git(path, *args).split("\0")) - {""}
+
+        staged = names("diff", "--cached", "--name-only", "--no-renames", "-z", "HEAD")
+        different = names("diff", "--cached", "--name-only", "--no-renames", "-z", incoming)
+        unstaged = names("diff", "--name-only", "--no-renames", "-z")
+        untracked = names("ls-files", "--others", "--exclude-standard", "-z")
+        local_commits = names("diff", "--name-only", "--no-renames", "-z", base, "HEAD")
+        # diff --cached includes unresolved paths; retain an explicit check so
+        # equality can never be inferred from a non-stage-zero index entry.
+        unresolved = {entry.split("\t", 1)[1]
+                      for entry in names("ls-files", "--unmerged", "-z")}
+        return staged - different - unstaged - untracked - local_commits - unresolved
+    except (AuditError, IndexError, OSError, UnicodeError):
+        return set()
+
+
 def contested_paths(
     first: "Checkout", second: "Checkout", ignore: tuple[str, ...]
 ) -> tuple[str, ...]:
     """Paths these two checkouts genuinely contend for.
 
-    Uncommitted work is invisible to any merge, so a path dirty on one side and
-    touched on the other is contested by definition. Committed work is settled
-    by asking git to merge the two heads.
+    Compare each dirty delta with the peer's contribution since their shared
+    history, not with everything inherited from the default branch. An inert
+    snapshot at the same HEAD contributes no competing committed change.
+    Unknown ancestry retains the conservative path-intersection fallback.
     """
-    dirty_overlap = {
-        name
-        for name in set(first.dirty_paths) | set(second.dirty_paths)
-        if name in set(first.changed_paths) and name in set(second.changed_paths)
-    }
+    first_dirty = set(first.dirty_paths) - pending_main_imports(first.path)
+    second_dirty = set(second.dirty_paths) - pending_main_imports(second.path)
+    first_changes, second_changes = set(first.changed_paths), set(second.changed_paths)
+    if first.head and second.head:
+        base = first.head if first.head == second.head else merge_base(first.path, first.head, second.head)
+        if base:
+            # Use strict reads here: committed_against's best-effort empty
+            # result must not turn an unreadable peer into permission to write.
+            try:
+                first_committed = set(run_git(first.path, "diff", "--name-only", base, first.head).splitlines())
+                second_committed = set(run_git(second.path, "diff", "--name-only", base, second.head).splitlines())
+                first_changes = first_committed | first_dirty
+                second_changes = second_committed | second_dirty
+            except AuditError:
+                pass
+    dirty_overlap = (first_dirty & second_changes) | (second_dirty & first_changes)
     conflicts: set[str] = set()
     if first.head and second.head and first.head != second.head:
         if not is_ancestor(first.path, first.head, second.head) and not is_ancestor(
@@ -746,6 +798,10 @@ def overlap_findings(
     }
     for checkout in checkouts:
         for error in checkout.activity_errors:
+            # A repository-level gate must not fail on someone else's policy
+            # drift (same contract as the identity-scoped overlap groups below).
+            if only_identity is not None and checkout.identity != only_identity:
+                continue
             findings.append(Finding(
                 code="GOV-TICKET-ACTIVITY-001",
                 severity="error",
@@ -866,7 +922,7 @@ def report_payload(
         "status": "passed" if not findings else "failed",
         "scope": only_identity or "workspace",
         "inventory": inventory or {
-            "schema": "wellmanifest.worktrees/v4",
+            "schema": None,
             "readOnly": True,
             "entries": [],
         },
@@ -964,7 +1020,7 @@ def main(argv: list[str] | None = None) -> int:
         ]
         checkouts = []
         inventory = {
-            "schema": "wellmanifest.worktrees/v4",
+            "schema": None,
             "readOnly": True,
             "entries": [],
         }

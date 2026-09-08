@@ -1,0 +1,125 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-018",
+  "summary": "Adopt Worktrees v5 and published governance 0.20.14",
+  "workstream": "governance",
+  "classification": {
+    "kind": "BUG",
+    "priority": "P2",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "project/ticket-018/**",
+    ".githooks/pre-commit",
+    ".github/workflows/new-project-governance.yml",
+    ".gitignore",
+    ".governance/AGENT_DECISIONS.md",
+    ".governance/branch-intent-reconciliation.schema.json",
+    ".governance/branch_intent_reconciliation.py",
+    ".governance/branch_lifecycle_check.py",
+    ".governance/diagnostics.json",
+    ".governance/docs/BRANCH_INTENT_RECONCILIATION.md",
+    ".governance/docs/LOCAL_CI_PUBLICATION.md",
+    ".governance/error/GOV-STANDARD-UPDATE.md",
+    ".governance/error/GOV-WORKTREE-OVERLAP.md",
+    ".governance/manifest.base.json",
+    ".governance/manifest.json",
+    ".governance/package-manifest.json",
+    ".governance/precommit_standard_update.py",
+    ".governance/standard-adoption.schema.json",
+    ".governance/workspace_lifecycle_check.py",
+    ".governance/worktree_overlap_check.py",
+    ".governance/worktree_path_check.py",
+    ".governance/worktrees.lock.json",
+    ".governance/worktrees.schema.json",
+    "AGENTS.md",
+    "GEMINI.md",
+    "scripts/install-agent-hosts.sh",
+    ".governance/manifest.lock.json"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "c0eee550fc1e38186d8832b4d85d6d717f4046cc",
+    "targetBranch": "main",
+    "outcome": "Install published Worktrees 0.5.2 with canonical repository-local relative worktrees through immutable New Project 0.20.14 adoption.",
+    "nonGoals": [
+      "Do not relocate or delete existing checkouts",
+      "No product behavior or review policy changes"
+    ],
+    "complexity": "L",
+    "estimatedMinutes": 45,
+    "budgets": {
+      "maxImplementationFiles": 15,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "standardAdoption": {
+      "sourceRepository": "wellmanifest/new-project",
+      "fromRevision": "da71bb6311b681a22e013b6386a58000909b8a7c",
+      "toRevision": "e65857ea2f62b20e4b830e3c5f611878bf31bb25"
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Use atomic published Goal adoption, preserving the existing governance ownership and target settings without moving responsibilities.",
+      "components": [
+        {
+          "name": "published-governance-adoption",
+          "paths": [
+            ".githooks/pre-commit",
+            ".github/workflows/new-project-governance.yml",
+            ".gitignore",
+            ".governance/AGENT_DECISIONS.md",
+            ".governance/branch-intent-reconciliation.schema.json",
+            ".governance/branch_intent_reconciliation.py",
+            ".governance/branch_lifecycle_check.py",
+            ".governance/diagnostics.json",
+            ".governance/docs/BRANCH_INTENT_RECONCILIATION.md",
+            ".governance/docs/LOCAL_CI_PUBLICATION.md",
+            ".governance/error/GOV-STANDARD-UPDATE.md",
+            ".governance/error/GOV-WORKTREE-OVERLAP.md",
+            ".governance/manifest.base.json",
+            ".governance/manifest.json",
+            ".governance/package-manifest.json",
+            ".governance/precommit_standard_update.py",
+            ".governance/standard-adoption.schema.json",
+            ".governance/workspace_lifecycle_check.py",
+            ".governance/worktree_overlap_check.py",
+            ".governance/worktree_path_check.py",
+            ".governance/worktrees.lock.json",
+            ".governance/worktrees.schema.json",
+            "AGENTS.md",
+            "GEMINI.md",
+            "scripts/install-agent-hosts.sh",
+            ".governance/manifest.lock.json"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the adoption commit; preserve existing worktrees and all unknown files."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "./project/governance-check.sh --actor agent"
+        ],
+        "evidence": "Pending governed diff and repository-specific tests."
+      }
+    ]
+  }
+}

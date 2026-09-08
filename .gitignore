@@ -11,3 +11,6 @@ reports/
 /.subactor/receipts/
 /.subactor/cache/
 /.subactor/snapshots/
+
+# Repository-local worktrees and operational state
+/.worktrees/
