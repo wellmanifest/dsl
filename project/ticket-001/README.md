@@ -3,7 +3,7 @@
 - **ID**: ticket-001
 - **Owner**: unresolved:human
 - **Status**: DONE
-- **Workflow state**: PUBLICATION
+- **Workflow state**: DONE
 - **Created**: 2026-08-09
 
 ## Goal and scope

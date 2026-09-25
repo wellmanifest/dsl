@@ -2,8 +2,8 @@
 
 - **ID**: ticket-010
 - **Owner**: Founder request via Codex conversation
-- **Status**: IN_PROGRESS
-- **Workflow state**: VALIDATION
+- **Status**: DONE
+- **Workflow state**: DONE
 - **Created**: 2026-08-26
 
 ## Goal and scope

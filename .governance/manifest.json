@@ -26,15 +26,26 @@
     "workstreams": {
       "governance": {
         "ownedPaths": [
+          ".aider.conf.yml",
+          ".cursor/rules/**",
+          ".githooks/**",
+          ".github/copilot-instructions.md",
+          ".github/workflows/new-project-governance.yml",
           ".gitignore",
           ".governance/**",
+          ".subactor/**",
           "AGENTS.md",
+          "CLAUDE.md",
+          "GEMINI.md",
           "README.md",
           "VERSION",
           "TODO.md",
           "CHANGELOG.md",
           ".env.example",
-          "project/**"
+          "project/**",
+          "scripts/**",
+          "wellmanifest_governance.py",
+          "worktree-guard.yaml"
         ]
       },
       "infrastructure": {
@@ -43,7 +54,7 @@
           "compose*.yml",
           "compose*.yaml",
           "infra/**",
-          ".github/**"
+          ".github/workflows/ci.yml"
         ]
       },
       "integration": {
@@ -158,7 +169,7 @@
   ],
   "standard": {
     "id": "wellmanifest/new-project",
-    "version": "0.20.14"
+    "version": "0.20.32"
   },
   "ticket": {
     "activeStatuses": [
@@ -168,7 +179,7 @@
       "DONE",
       "CANCELLED"
     ],
-    "directoryPattern": "^ticket-[0-9]{3}$",
+    "directoryPattern": "^ticket-[0-9]{3,}$",
     "implementationStates": [
       "EDIT",
       "VALIDATION",

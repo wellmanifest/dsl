@@ -2,8 +2,8 @@
 
 - **ID**: ticket-011
 - **Owner**: requesting user, represented by the conversation
-- **Status**: IN_PROGRESS
-- **Workflow state**: PUBLICATION
+- **Status**: DONE
+- **Workflow state**: DONE
 - **Created**: 2026-09-01
 
 ## Goal and scope
