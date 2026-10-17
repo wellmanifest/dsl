@@ -1314,6 +1314,10 @@ def load_targets(
     return report, manifests
 
 
+def _run_git_command(command: list[str], root: Path) -> bytes:
+    return subprocess.check_output(command, cwd=root)
+
+
 def git_paths(
     root: Path, base: str, head: str, include_worktree: bool
 ) -> tuple[Report, set[str]]:
@@ -1330,7 +1334,7 @@ def git_paths(
         )
     for command in commands:
         try:
-            output = subprocess.check_output(command, cwd=root)
+            output = _run_git_command(command, root)
         except (FileNotFoundError, subprocess.CalledProcessError) as error:
             report.error(
                 "DSL-GIT-001", f"cannot determine changed files: {error}", root
