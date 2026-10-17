@@ -1,0 +1,74 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-020",
+  "summary": "Extract git subprocess helper from loop in dsl_check",
+  "workstream": "integration",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-020/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "src/dsl_check.py",
+    ".governance/standard-adoption.json"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "adfe6ed34b07df58325da403f7fb6b251538e9ab",
+    "targetBranch": "main",
+    "outcome": "Extract _run_git_command helper outside the loop in git_paths in src/dsl_check.py and align .governance/standard-adoption.json.",
+    "nonGoals": [
+      "No breaking CLI or schema changes"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 15,
+    "budgets": {
+      "maxImplementationFiles": 1,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Move subprocess.check_output in git_paths into a dedicated module-level helper _run_git_command in src/dsl_check.py.",
+      "components": [
+        {
+          "name": "dsl-check",
+          "paths": [
+            "src/dsl_check.py"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert _run_git_command extraction in src/dsl_check.py."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "python3 src/dsl_check.py self-test",
+          "python3 tests/profile_contract_test.py",
+          "./project/governance-check.sh"
+        ],
+        "evidence": "All tests, standard_pack_check, and governance checks pass with 0 findings."
+      }
+    ]
+  }
+}
