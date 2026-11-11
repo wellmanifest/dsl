@@ -1,11 +1,9 @@
-"""Shared constants, report primitives, and safe path/JSON helpers for dsl_check."""
+"""Shared constants, report primitives, and safe path/URI helpers for dsl_check."""
 
 from __future__ import annotations
 
 import fnmatch
-import hashlib
 import json
-import math
 import os
 import re
 import stat
@@ -15,10 +13,27 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import urlparse
 
-MAX_JSON_BYTES = 4 * 1024 * 1024
-MAX_JSON_DEPTH = 64
-MAX_JSON_INT_ABS = 10**400 - 1
-MAX_HASH_BYTES = 64 * 1024 * 1024
+from dsl_io import (
+    MAX_HASH_BYTES,
+    MAX_JSON_BYTES,
+    MAX_JSON_DEPTH,
+    MAX_JSON_INT_ABS,
+    MAX_JSON_INT_DIGITS,
+    _check_json_scalar,
+    _enforce_json_depth,
+    _has_forbidden_control_char,
+    _has_symlink_ancestor,
+    _is_valid_utf8,
+    _open_regular_fd,
+    _parse_bounded_int,
+    _parse_finite_float,
+    _reject_duplicate_pairs,
+    _reject_nonfinite_constant,
+    read_regular_bytes,
+    read_regular_utf8,
+    sha256,
+    strict_json_loads,
+)
 
 MANIFEST_NAME = "dsl-manifest.json"
 MANIFEST_SCHEMA = "wellmanifest.dsl/manifest/v1"
@@ -44,6 +59,60 @@ HELP_PAGE_SECTIONS = {
     "error": ("Meaning", "Cause", "Resolution"),
     "critical": ("Risk", "Detection", "Remediation", "Verification"),
 }
+
+__all__ = [
+    "COMMAND_NAME",
+    "DIGEST",
+    "DOMAIN",
+    "FINDINGS_SCHEMA",
+    "FINDING_CODE",
+    "HELP_PAGE_SECTIONS",
+    "MANIFEST_NAME",
+    "MANIFEST_SCHEMA",
+    "MAX_HASH_BYTES",
+    "MAX_JSON_BYTES",
+    "MAX_JSON_DEPTH",
+    "MAX_JSON_INT_ABS",
+    "MAX_JSON_INT_DIGITS",
+    "MEDIA_TYPE",
+    "PREFIX",
+    "PRODUCER_ID",
+    "REVISION",
+    "SEMVER",
+    "STABLE_ID",
+    "URI_SCHEME",
+    "WINDOWS_DRIVE_PREFIX",
+    "Finding",
+    "Report",
+    "_check_json_scalar",
+    "_enforce_json_depth",
+    "_has_forbidden_control_char",
+    "_has_symlink_ancestor",
+    "_is_valid_utf8",
+    "_open_regular_fd",
+    "_parse_bounded_int",
+    "_parse_finite_float",
+    "_reject_duplicate_pairs",
+    "_reject_nonfinite_constant",
+    "check_object",
+    "check_string_list",
+    "help_page_text",
+    "is_single_line_string",
+    "is_string",
+    "matches",
+    "read_regular_bytes",
+    "read_regular_utf8",
+    "resolve_nonsymlink_under_root",
+    "resolve_repository_path",
+    "safe_relative",
+    "sha256",
+    "str_choice",
+    "strict_json_loads",
+    "string_set",
+    "unique",
+    "uri_is_valid",
+    "write_example_help_pages",
+]
 
 
 @dataclass(frozen=True)
@@ -85,179 +154,32 @@ class Report:
             )
         if not self.findings:
             return "DSL-PASS: passed (0 errors)"
-        lines = []
-        for item in self.findings:
-            location = f" [{item.path}]" if item.path else ""
-            lines.append(
-                f"{item.code} {item.severity.upper()}: {item.message}{location}"
-            )
+        lines = [
+            f"{item.code} {item.severity.upper()}: {item.message}"
+            + (f" [{item.path}]" if item.path else "")
+            for item in self.findings
+        ]
         errors = sum(item.severity == "error" for item in self.findings)
         lines.append(f"DSL-FAIL: failed ({errors} errors)")
         return "\n".join(lines)
 
 
-def _reject_duplicate_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    result: dict[str, Any] = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError(f"duplicate JSON key: {key!r}")
-        result[key] = value
-    return result
-
-
-def _reject_nonfinite_constant(token: str) -> Any:
-    raise ValueError(f"non-finite JSON constant is forbidden: {token}")
-
-
-def _parse_finite_float(token: str) -> float:
-    parsed = float(token)
-    if not math.isfinite(parsed):
-        raise ValueError(f"JSON number overflows finite float range: {token}")
-    return parsed
-
-
-def _is_valid_utf8(value: str) -> bool:
-    try:
-        value.encode("utf-8")
-    except UnicodeEncodeError:
-        return False
-    return True
-
-
-def _check_json_scalar(value: Any) -> None:
-    if isinstance(value, str) and not _is_valid_utf8(value):
-        raise ValueError("JSON string contains invalid UTF-8 surrogate")
-    if isinstance(value, float) and not math.isfinite(value):
-        raise ValueError("non-finite float in JSON structure")
-    if (
-        isinstance(value, int)
-        and not isinstance(value, bool)
-        and abs(value) > MAX_JSON_INT_ABS
-    ):
-        raise ValueError("JSON integer exceeds safe magnitude")
-
-
-def _enforce_json_depth(root_value: Any, max_depth: int = MAX_JSON_DEPTH) -> None:
-    stack: list[tuple[Any, int]] = [(root_value, 0)]
-    while stack:
-        current, depth = stack.pop()
-        if depth > max_depth:
-            raise ValueError(f"JSON nesting exceeds maximum depth of {max_depth}")
-        if isinstance(current, dict):
-            for key, child in current.items():
-                if not isinstance(key, str):
-                    raise TypeError("JSON object keys must be strings")
-                if not _is_valid_utf8(key):
-                    raise ValueError("JSON key contains invalid UTF-8 surrogate")
-                if isinstance(child, (dict, list)):
-                    stack.append((child, depth + 1))
-                else:
-                    _check_json_scalar(child)
-        elif isinstance(current, list):
-            for child in current:
-                if isinstance(child, (dict, list)):
-                    stack.append((child, depth + 1))
-                else:
-                    _check_json_scalar(child)
-        else:
-            _check_json_scalar(current)
-
-
-def _has_symlink_ancestor(path: Path) -> bool:
-    ancestors = (
-        [anc for anc in path.parents if anc != Path(".")]
-        if not path.is_absolute()
-        else [anc for anc in path.parents if len(anc.parts) > 2]
-    )
-    for anc in ancestors:
-        try:
-            if anc.is_symlink():
-                return True
-        except OSError:
-            return True
-    return False
-
-
-def _open_regular_fd(path: Path, *, follow_symlinks: bool = False) -> tuple[int, int]:
-    if not follow_symlinks and _has_symlink_ancestor(path):
-        raise OSError(f"refusing to traverse symlink ancestor: {path}")
-    link_meta = None if follow_symlinks else os.lstat(path)
-    if link_meta is not None and stat.S_ISLNK(link_meta.st_mode):
-        raise OSError(f"refusing to open symlink: {path}")
-    flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0)
-    if not follow_symlinks:
-        flags |= getattr(os, "O_NOFOLLOW", 0)
-    fd = os.open(path, flags)
-    try:
-        metadata = os.fstat(fd)
-        if not stat.S_ISREG(metadata.st_mode):
-            raise OSError(f"not a regular file: {path}")
-        if link_meta is not None and (
-            metadata.st_dev != link_meta.st_dev or metadata.st_ino != link_meta.st_ino
-        ):
-            raise OSError(f"inode changed during open: {path}")
-    except BaseException:
-        os.close(fd)
-        raise
-    return fd, metadata.st_size
-
-
-def read_regular_bytes(
-    path: Path, *, max_bytes: int = MAX_JSON_BYTES, follow_symlinks: bool = False
-) -> bytes:
-    if not isinstance(max_bytes, int) or isinstance(max_bytes, bool) or max_bytes <= 0:
-        raise ValueError("max_bytes must be a positive integer")
-    fd, st_size = _open_regular_fd(path, follow_symlinks=follow_symlinks)
-    try:
-        if st_size > max_bytes:
-            raise ValueError(
-                f"file exceeds maximum allowed size ({max_bytes} bytes): {path}"
-            )
-        chunks: list[bytes] = []
-        total = 0
-        while True:
-            chunk = os.read(fd, min(65536, max_bytes + 1 - total))
-            if not chunk:
-                break
-            total += len(chunk)
-            if total > max_bytes:
-                raise ValueError(
-                    f"file exceeds maximum allowed size ({max_bytes} bytes): {path}"
-                )
-            chunks.append(chunk)
-        return b"".join(chunks)
-    finally:
-        os.close(fd)
-
-
-def read_regular_utf8(
-    path: Path, *, max_bytes: int = MAX_JSON_BYTES, follow_symlinks: bool = False
-) -> str:
-    return read_regular_bytes(
-        path, max_bytes=max_bytes, follow_symlinks=follow_symlinks
-    ).decode("utf-8")
-
-
-def strict_json_loads(raw: str) -> Any:
-    if not isinstance(raw, str):
-        raise TypeError("JSON input must be a string")
-    if len(raw.encode("utf-8")) > MAX_JSON_BYTES:
-        raise ValueError(f"JSON input exceeds {MAX_JSON_BYTES} bytes")
-    try:
-        parsed = json.loads(
-            raw,
-            object_pairs_hook=_reject_duplicate_pairs,
-            parse_constant=_reject_nonfinite_constant,
-            parse_float=_parse_finite_float,
-        )
-    except RecursionError as error:
-        raise ValueError("JSON nesting exceeds maximum depth") from error
-    _enforce_json_depth(parsed, MAX_JSON_DEPTH)
-    return parsed
-
-
 def is_string(value: Any) -> bool:
-    return isinstance(value, str) and bool(value) and _is_valid_utf8(value)
+    return (
+        isinstance(value, str)
+        and bool(value)
+        and _is_valid_utf8(value)
+        and not _has_forbidden_control_char(value, allow_whitespace=True)
+    )
+
+
+def is_single_line_string(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and bool(value.strip())
+        and _is_valid_utf8(value)
+        and not _has_forbidden_control_char(value, allow_whitespace=False)
+    )
 
 
 def str_choice(value: Any, allowed: set[str] | frozenset[str]) -> bool:
@@ -317,8 +239,10 @@ def check_string_list(
     *,
     nonempty: bool = False,
     allowed: set[str] | None = None,
+    single_line: bool = False,
 ) -> list[str]:
-    if not isinstance(value, list) or any(not is_string(item) for item in value):
+    predicate = is_single_line_string if single_line else is_string
+    if not isinstance(value, list) or any(not predicate(item) for item in value):
         report.error(
             "DSL-MANIFEST-001", f"{label} must be an array of non-empty strings", path
         )
@@ -341,7 +265,7 @@ def check_string_list(
 def safe_relative(
     raw: Any, label: str, report: Report, manifest_path: Path
 ) -> str | None:
-    if not is_string(raw):
+    if not isinstance(raw, str) or not raw or not _is_valid_utf8(raw):
         report.error(
             "DSL-PATH-001", f"{label} must be a non-empty relative path", manifest_path
         )
@@ -418,34 +342,8 @@ def matches(path: str, patterns: Iterable[str]) -> bool:
     return any(fnmatch.fnmatchcase(path, pattern) for pattern in patterns)
 
 
-def sha256(path: Path) -> str:
-    fd, st_size = _open_regular_fd(path, follow_symlinks=False)
-    try:
-        if st_size > MAX_HASH_BYTES:
-            raise OSError(
-                f"file exceeds maximum hash size ({MAX_HASH_BYTES} bytes): {path}"
-            )
-        digest = hashlib.sha256()
-        total = 0
-        while True:
-            chunk = os.read(fd, 1024 * 1024)
-            if not chunk:
-                break
-            total += len(chunk)
-            if total > MAX_HASH_BYTES:
-                raise OSError(
-                    f"file exceeds maximum hash size ({MAX_HASH_BYTES} bytes): {path}"
-                )
-            digest.update(chunk)
-        return f"sha256:{digest.hexdigest()}"
-    finally:
-        os.close(fd)
-
-
 def uri_is_valid(value: Any) -> bool:
-    if not is_string(value) or any(
-        ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in value
-    ):
+    if not is_single_line_string(value) or any(ch.isspace() for ch in value):
         return False
     try:
         parsed = urlparse(value)

@@ -1,0 +1,111 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-025",
+  "summary": "Modularize dsl_io and harden symlink traversal, JSON bounds, and control-char checks",
+  "workstream": "integration",
+  "classification": {
+    "kind": "BUG",
+    "priority": "P1",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-024/README.md",
+    "project/ticket-025/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "profiles/dsl-manifest.json",
+    "src/dsl_findings.py",
+    "src/dsl_io.py",
+    "src/dsl_primitives.py",
+    "src/dsl_sections.py",
+    "tests/test_dsl_hardening.py"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "7f37319deb5d01060575a2a8e163d11b2d654901",
+    "targetBranch": "main",
+    "outcome": "Extract bounded regular-file I/O, symlink-ancestor checks, strict finite JSON parsing, and SHA-256 hashing into src/dsl_io.py (re-exported from src/dsl_primitives.py), harden relative and un-normalized symlink-ancestor traversal, bound JSON integer digits before int() conversion, reject C0/DEL control characters and multi-line single-line fields across dsl_primitives/dsl_sections/dsl_findings, refresh profiles/dsl-manifest.json digests, and mark merged ticket-024 DONE.",
+    "nonGoals": [
+      "No breaking CLI or JSON Schema changes"
+    ],
+    "complexity": "M",
+    "estimatedMinutes": 25,
+    "budgets": {
+      "maxImplementationFiles": 8,
+      "maxAffectedComponents": 3,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Modularize low-level file, symlink, hash, and strict JSON primitives into src/dsl_io.py while preserving full backward-compatible re-exports in src/dsl_primitives.py and keeping all Python modules well below 500 lines.",
+      "components": [
+        {
+          "name": "dsl-check",
+          "paths": [
+            "src/dsl_io.py",
+            "src/dsl_primitives.py",
+            "src/dsl_sections.py",
+            "src/dsl_findings.py"
+          ]
+        },
+        {
+          "name": "dsl-profiles-manifest",
+          "paths": [
+            "profiles/dsl-manifest.json"
+          ]
+        },
+        {
+          "name": "dsl-hardening-tests",
+          "paths": [
+            "tests/test_dsl_hardening.py"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert this bounded modularization and hardening commit via protected PR delivery."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "ruff format --check src/*.py tests/*.py",
+          "ruff check --no-cache src/*.py tests/*.py"
+        ],
+        "evidence": "project/ticket-025/README.md"
+      },
+      {
+        "criterion": "AC-02",
+        "commands": [
+          "python3 src/dsl_check.py self-test",
+          "python3 -m pytest -q -p no:cacheprovider tests/test_dsl_hardening.py tests/profile_contract_test.py"
+        ],
+        "evidence": "project/ticket-025/README.md"
+      },
+      {
+        "criterion": "AC-03",
+        "commands": [
+          "python3 src/dsl_check.py validate profiles/dsl-manifest.json",
+          "python3 src/dsl_check.py standards profiles/dsl-manifest.json",
+          "./project/governance-check.sh --base origin/main",
+          "wellman check"
+        ],
+        "evidence": "project/ticket-025/README.md"
+      }
+    ]
+  }
+}
