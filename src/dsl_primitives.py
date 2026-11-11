@@ -17,25 +17,27 @@ from urllib.parse import urlparse
 
 MAX_JSON_BYTES = 4 * 1024 * 1024
 MAX_JSON_DEPTH = 64
+MAX_JSON_INT_ABS = 10**400 - 1
 MAX_HASH_BYTES = 64 * 1024 * 1024
 
 MANIFEST_NAME = "dsl-manifest.json"
 MANIFEST_SCHEMA = "wellmanifest.dsl/manifest/v1"
 FINDINGS_SCHEMA = "wellmanifest.dsl/findings/v1"
 SEMVER = re.compile(
-    r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
+    r"\A(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
     r"(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?\Z"
 )
-STABLE_ID = re.compile(r"^[a-z0-9][a-z0-9._-]*[a-z0-9]\Z")
-DIGEST = re.compile(r"^sha256:([a-f0-9]{64})\Z")
-REVISION = re.compile(r"^[a-f0-9]{40}\Z")
-DOMAIN = re.compile(r"^[a-z0-9][a-z0-9._-]*\Z")
-PREFIX = re.compile(r"^[a-z][a-z0-9._-]*\Z")
-MEDIA_TYPE = re.compile(r"^[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+\Z")
-COMMAND_NAME = re.compile(r"^[A-Z][A-Z0-9_]*\Z")
-FINDING_CODE = re.compile(r"^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\Z")
-PRODUCER_ID = re.compile(r"^[a-z0-9][a-z0-9._-]*[a-z0-9]\Z")
-URI_SCHEME = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*\Z")
+STABLE_ID = re.compile(r"\A[a-z0-9][a-z0-9._-]*[a-z0-9]\Z")
+DIGEST = re.compile(r"\Asha256:([a-f0-9]{64})\Z")
+REVISION = re.compile(r"\A[a-f0-9]{40}\Z")
+DOMAIN = re.compile(r"\A[a-z0-9][a-z0-9._-]*\Z")
+PREFIX = re.compile(r"\A[a-z][a-z0-9._-]*\Z")
+MEDIA_TYPE = re.compile(r"\A[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+\Z")
+COMMAND_NAME = re.compile(r"\A[A-Z][A-Z0-9_]*\Z")
+FINDING_CODE = re.compile(r"\A[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\Z")
+PRODUCER_ID = re.compile(r"\A[a-z0-9][a-z0-9._-]*[a-z0-9]\Z")
+URI_SCHEME = re.compile(r"\A[a-zA-Z][a-zA-Z0-9+.-]*\Z")
+WINDOWS_DRIVE_PREFIX = re.compile(r"\A[A-Za-z]:")
 
 HELP_PAGE_SECTIONS = {
     "command": ("Purpose", "Syntax", "Inputs", "Outputs", "Errors", "Examples"),
@@ -79,6 +81,7 @@ class Report:
                 },
                 indent=2,
                 sort_keys=True,
+                allow_nan=False,
             )
         if not self.findings:
             return "DSL-PASS: passed (0 errors)"
@@ -113,6 +116,27 @@ def _parse_finite_float(token: str) -> float:
     return parsed
 
 
+def _is_valid_utf8(value: str) -> bool:
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
+def _check_json_scalar(value: Any) -> None:
+    if isinstance(value, str) and not _is_valid_utf8(value):
+        raise ValueError("JSON string contains invalid UTF-8 surrogate")
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError("non-finite float in JSON structure")
+    if (
+        isinstance(value, int)
+        and not isinstance(value, bool)
+        and abs(value) > MAX_JSON_INT_ABS
+    ):
+        raise ValueError("JSON integer exceeds safe magnitude")
+
+
 def _enforce_json_depth(root_value: Any, max_depth: int = MAX_JSON_DEPTH) -> None:
     stack: list[tuple[Any, int]] = [(root_value, 0)]
     while stack:
@@ -123,21 +147,40 @@ def _enforce_json_depth(root_value: Any, max_depth: int = MAX_JSON_DEPTH) -> Non
             for key, child in current.items():
                 if not isinstance(key, str):
                     raise TypeError("JSON object keys must be strings")
-                if isinstance(child, float) and not math.isfinite(child):
-                    raise ValueError("non-finite float in JSON structure")
+                if not _is_valid_utf8(key):
+                    raise ValueError("JSON key contains invalid UTF-8 surrogate")
                 if isinstance(child, (dict, list)):
                     stack.append((child, depth + 1))
+                else:
+                    _check_json_scalar(child)
         elif isinstance(current, list):
             for child in current:
-                if isinstance(child, float) and not math.isfinite(child):
-                    raise ValueError("non-finite float in JSON structure")
                 if isinstance(child, (dict, list)):
                     stack.append((child, depth + 1))
-        elif isinstance(current, float) and not math.isfinite(current):
-            raise ValueError("non-finite float in JSON structure")
+                else:
+                    _check_json_scalar(child)
+        else:
+            _check_json_scalar(current)
+
+
+def _has_symlink_ancestor(path: Path) -> bool:
+    ancestors = (
+        [anc for anc in path.parents if anc != Path(".")]
+        if not path.is_absolute()
+        else [anc for anc in path.parents if len(anc.parts) > 2]
+    )
+    for anc in ancestors:
+        try:
+            if anc.is_symlink():
+                return True
+        except OSError:
+            return True
+    return False
 
 
 def _open_regular_fd(path: Path, *, follow_symlinks: bool = False) -> tuple[int, int]:
+    if not follow_symlinks and _has_symlink_ancestor(path):
+        raise OSError(f"refusing to traverse symlink ancestor: {path}")
     link_meta = None if follow_symlinks else os.lstat(path)
     if link_meta is not None and stat.S_ISLNK(link_meta.st_mode):
         raise OSError(f"refusing to open symlink: {path}")
@@ -162,6 +205,8 @@ def _open_regular_fd(path: Path, *, follow_symlinks: bool = False) -> tuple[int,
 def read_regular_bytes(
     path: Path, *, max_bytes: int = MAX_JSON_BYTES, follow_symlinks: bool = False
 ) -> bytes:
+    if not isinstance(max_bytes, int) or isinstance(max_bytes, bool) or max_bytes <= 0:
+        raise ValueError("max_bytes must be a positive integer")
     fd, st_size = _open_regular_fd(path, follow_symlinks=follow_symlinks)
     try:
         if st_size > max_bytes:
@@ -171,7 +216,7 @@ def read_regular_bytes(
         chunks: list[bytes] = []
         total = 0
         while True:
-            chunk = os.read(fd, 65536)
+            chunk = os.read(fd, min(65536, max_bytes + 1 - total))
             if not chunk:
                 break
             total += len(chunk)
@@ -212,7 +257,7 @@ def strict_json_loads(raw: str) -> Any:
 
 
 def is_string(value: Any) -> bool:
-    return isinstance(value, str) and bool(value)
+    return isinstance(value, str) and bool(value) and _is_valid_utf8(value)
 
 
 def str_choice(value: Any, allowed: set[str] | frozenset[str]) -> bool:
@@ -308,7 +353,7 @@ def safe_relative(
             manifest_path,
         )
         return None
-    if "\\" in raw or re.match(r"^[A-Za-z]:", raw):
+    if "\\" in raw or WINDOWS_DRIVE_PREFIX.match(raw):
         report.error(
             "DSL-PATH-001",
             f"{label} must use repository-relative POSIX syntax",
@@ -402,15 +447,22 @@ def uri_is_valid(value: Any) -> bool:
         ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in value
     ):
         return False
-    parsed = urlparse(value)
+    try:
+        parsed = urlparse(value)
+    except ValueError:
+        return False
     if URI_SCHEME.fullmatch(parsed.scheme) is None:
         return False
     has_authority_prefix = value[len(parsed.scheme) : len(parsed.scheme) + 3] == "://"
     scheme_lower = parsed.scheme.lower()
-    no_dotdot = ".." not in re.split(r"[/:]", parsed.path)
     if has_authority_prefix or scheme_lower in {"http", "https", "schema"}:
-        return bool(parsed.netloc) and no_dotdot
-    return bool(parsed.netloc or parsed.path) and no_dotdot
+        if not parsed.netloc or parsed.hostname in {None, ".", ".."}:
+            return False
+        return not any(seg in {".", ".."} for seg in parsed.path.split("/"))
+    opaque = parsed.netloc or parsed.path
+    if not opaque:
+        return False
+    return not any(seg in {"", ".", ".."} for seg in re.split(r"[/:]", opaque))
 
 
 def help_page_text(name: str, kind: str) -> str:
