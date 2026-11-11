@@ -37,7 +37,8 @@
     "schemas/commands/**",
     "spec/DSL_STANDARD.md",
     "src/**",
-    "tests/profile_contract_test.py"
+    "tests/profile_contract_test.py",
+    "tests/test_dsl_hardening.py"
   ],
   "artifacts": [
     {
@@ -113,32 +114,37 @@
     {
       "path": "src/dsl_findings.py",
       "role": "parser-contract",
-      "digest": "sha256:dc6749f617bba51c888d92ea360550913014cbb5533e097d6d0078d0ddda547a"
+      "digest": "sha256:f40ce4d8f441d07242283bd7c32398cc0190705d168e6d428b67de611a7066eb"
     },
     {
       "path": "src/dsl_manifest.py",
       "role": "parser-contract",
-      "digest": "sha256:7c7dc92041d45012eca550dbb5bdfddb7c71caf7086081c9e708c3722c891cd1"
+      "digest": "sha256:ca165f15add2c5c420fc1a9822a88f32f733c4705333f0d90124cac21ce44378"
     },
     {
       "path": "src/dsl_policy.py",
       "role": "parser-contract",
-      "digest": "sha256:75effb5625268b9ac6cc73f5fe8fdba2eb1c2ed2a300b772d8e0b714b9acb489"
+      "digest": "sha256:1bc9e6384315f3897963d458d7681ca0d24088f5ae1efe7498ee14f865023ada"
     },
     {
       "path": "src/dsl_primitives.py",
       "role": "parser-contract",
-      "digest": "sha256:2b726f2e16d64564301ca41d10a7bd68bede73a2047e0218076564329d7ce9c0"
+      "digest": "sha256:dcebac18c64fe75e02ea7a7ed218d51bfef74975dca8bb43b1b36de331069c64"
     },
     {
       "path": "src/dsl_sections.py",
       "role": "parser-contract",
-      "digest": "sha256:d8859133480ad2358694cc40b1343cc630ddb9f472c0b10160516bc50b492688"
+      "digest": "sha256:cd85c142bdf4491ebbfe67db8d4d4787f797aa8efd8d0a7ce175591c07e602d8"
     },
     {
       "path": "src/dsl_selftest.py",
       "role": "parser-contract",
       "digest": "sha256:7550655fed3474acedda8d52ba6de3b7d188baff9237e52bacee8a6f015a4bc7"
+    },
+    {
+      "path": "tests/test_dsl_hardening.py",
+      "role": "parser-contract",
+      "digest": "sha256:08cebde5c8f8a1dc72f5e7b740a44bd8ab16288df5cff875e457a0389e02d6ed"
     }
   ],
   "namespaces": [

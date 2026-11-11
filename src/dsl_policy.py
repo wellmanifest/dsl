@@ -21,7 +21,10 @@ from dsl_primitives import (
     check_object,
     check_string_list,
     matches,
+    read_regular_utf8,
     resolve_repository_path,
+    str_choice,
+    string_set,
     uri_is_valid,
 )
 
@@ -77,8 +80,8 @@ def validate_help_page(
             )
         return
     try:
-        text = resolved.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as error:
+        text = read_regular_utf8(resolved)
+    except (OSError, UnicodeDecodeError, ValueError) as error:
         report.error(
             "DSL-DOC-003", f"help page cannot be read as UTF-8: {error}", relative
         )
@@ -118,7 +121,7 @@ def validate_documentation(
     if item is None:
         return None
     vocabulary_kind = item.get("vocabularyKind")
-    if vocabulary_kind not in {"commands", "documents"}:
+    if not str_choice(vocabulary_kind, {"commands", "documents"}):
         report.error(
             "DSL-DOC-001",
             "documentation.vocabularyKind must be commands or documents",
@@ -217,13 +220,14 @@ def required_publication_tier(manifest: dict[str, Any]) -> str:
     conformance = manifest.get("conformance")
     effect = semantics.get("effectModel") if isinstance(semantics, dict) else None
     mode = llm.get("mode") if isinstance(llm, dict) else None
-    levels = conformance.get("levels", []) if isinstance(conformance, dict) else []
+    raw_levels = conformance.get("levels") if isinstance(conformance, dict) else None
+    level_set = string_set(raw_levels)
     if effect == "controlled-effects":
         return "controlled"
     if (
-        effect in {"declarative-policy", "propose-only"}
-        or mode in {"input", "output", "bidirectional"}
-        or bool(set(levels) & {"runtime", "llm-boundary"})
+        str_choice(effect, {"declarative-policy", "propose-only"})
+        or str_choice(mode, {"input", "output", "bidirectional"})
+        or bool(level_set & {"runtime", "llm-boundary"})
     ):
         return "review"
     return "basic"
@@ -244,7 +248,7 @@ def validate_publication_policy(
         return
     tier = item.get("declaredTier")
     required = required_publication_tier(manifest)
-    if tier not in {"basic", "review", "controlled"}:
+    if not str_choice(tier, {"basic", "review", "controlled"}):
         report.error("DSL-PUBLICATION-001", "publication tier is invalid", path)
     elif tier != required:
         report.error(

@@ -18,6 +18,7 @@ from dsl_primitives import (
     resolve_repository_path,
     safe_relative,
     sha256,
+    str_choice,
     unique,
     uri_is_valid,
 )
@@ -40,7 +41,9 @@ def validate_owners(value: Any, report: Report, path: Path) -> None:
         )
         if item is None:
             continue
-        if item.get("kind") not in {"repository", "organization", "team", "person"}:
+        if not str_choice(
+            item.get("kind"), {"repository", "organization", "team", "person"}
+        ):
             report.error("DSL-MANIFEST-001", f"owners[{index}].kind is invalid", path)
         if not is_string(item.get("id")):
             report.error(
@@ -88,13 +91,10 @@ def validate_source(
         report.error(
             "DSL-MANIFEST-001", "source.declaredVersion must be non-empty", path
         )
-    if source.get("canonical") not in {
-        "json-ast",
-        "protobuf",
-        "text",
-        "markdown-embedded",
-        "other",
-    }:
+    if not str_choice(
+        source.get("canonical"),
+        {"json-ast", "protobuf", "text", "markdown-embedded", "other"},
+    ):
         report.error("DSL-MANIFEST-001", "source.canonical is invalid", path)
     media_type = source.get("mediaType")
     if not isinstance(media_type, str) or MEDIA_TYPE.fullmatch(media_type) is None:
@@ -153,16 +153,19 @@ def validate_artifacts(
                 f"artifact is outside ownedPaths: {artifact_path}",
                 manifest_path,
             )
-        if artifact.get("role") not in {
-            "normative-source",
-            "schema",
-            "grammar",
-            "parser-contract",
-            "serializer-contract",
-            "profile",
-            "example",
-            "documentation",
-        }:
+        if not str_choice(
+            artifact.get("role"),
+            {
+                "normative-source",
+                "schema",
+                "grammar",
+                "parser-contract",
+                "serializer-contract",
+                "profile",
+                "example",
+                "documentation",
+            },
+        ):
             report.error(
                 "DSL-MANIFEST-001",
                 f"artifact role is invalid: {artifact.get('role')}",
@@ -266,11 +269,10 @@ def validate_projections(value: Any, report: Report, path: Path) -> None:
                 f"projections[{index}] names and media types must be non-empty",
                 path,
             )
-        if item.get("direction") not in {
-            "bidirectional",
-            "from-canonical",
-            "to-canonical",
-        }:
+        if not str_choice(
+            item.get("direction"),
+            {"bidirectional", "from-canonical", "to-canonical"},
+        ):
             report.error(
                 "DSL-MANIFEST-001", f"projections[{index}].direction is invalid", path
             )
@@ -298,7 +300,7 @@ def validate_lifecycle(value: Any, status: Any, report: Report, path: Path) -> N
             report.error(
                 "DSL-COMPAT-001", f"lifecycle.{key} must equal {expected_value}", path
             )
-    if item.get("stability") not in {"experimental", "stable", "deprecated"}:
+    if not str_choice(item.get("stability"), {"experimental", "stable", "deprecated"}):
         report.error("DSL-MANIFEST-001", "lifecycle.stability is invalid", path)
     if item.get("stability") != status:
         report.error(
@@ -312,14 +314,14 @@ def validate_semantics(value: Any, report: Report, path: Path) -> None:
     if item is None:
         return
     effect = item.get("effectModel")
-    if effect not in {
-        "descriptive",
-        "declarative-policy",
-        "propose-only",
-        "controlled-effects",
-    }:
+    if not str_choice(
+        effect,
+        {"descriptive", "declarative-policy", "propose-only", "controlled-effects"},
+    ):
         report.error("DSL-MANIFEST-001", "semantics.effectModel is invalid", path)
-    if item.get("unknownPolicy") not in {"preserve", "reject", "domain-defined"}:
+    if not str_choice(
+        item.get("unknownPolicy"), {"preserve", "reject", "domain-defined"}
+    ):
         report.error("DSL-MANIFEST-001", "semantics.unknownPolicy is invalid", path)
     authority = item.get("authoritySchema")
     if effect == "controlled-effects" and not is_string(authority):
@@ -349,7 +351,7 @@ def validate_llm(value: Any, report: Report, path: Path) -> None:
     if item is None:
         return
     mode = item.get("mode")
-    if mode not in {"none", "input", "output", "bidirectional"}:
+    if not str_choice(mode, {"none", "input", "output", "bidirectional"}):
         report.error("DSL-LLM-001", "llm.mode is invalid", path)
         mode = "invalid"
     requests = check_string_list(
@@ -369,7 +371,7 @@ def validate_llm(value: Any, report: Report, path: Path) -> None:
             path,
         )
     natural = item.get("naturalLanguage")
-    if natural not in {"forbidden", "typed-source-only"}:
+    if not str_choice(natural, {"forbidden", "typed-source-only"}):
         report.error("DSL-LLM-001", "llm.naturalLanguage is invalid", path)
     source_schema = item.get("sourceSchema")
     if natural == "typed-source-only" and not is_string(source_schema):
@@ -379,7 +381,7 @@ def validate_llm(value: Any, report: Report, path: Path) -> None:
             "DSL-LLM-001", "forbidden natural language requires sourceSchema=null", path
         )
     protocol = item.get("decisionProtocol")
-    if protocol not in {"none", "dsl-input-output", "nl-to-dsl-input-output"}:
+    if not str_choice(protocol, {"none", "dsl-input-output", "nl-to-dsl-input-output"}):
         report.error("DSL-LLM-001", "llm.decisionProtocol is invalid", path)
     elif mode == "none" and protocol != "none":
         report.error(
@@ -461,12 +463,10 @@ def validate_mappings(value: Any, report: Report, path: Path) -> None:
                 f"mappings[{index}] names and versions must be non-empty",
                 path,
             )
-        if item.get("relation") not in {
-            "extends",
-            "implements",
-            "maps-to",
-            "compatible-with",
-        }:
+        if not str_choice(
+            item.get("relation"),
+            {"extends", "implements", "maps-to", "compatible-with"},
+        ):
             report.error(
                 "DSL-MANIFEST-001", f"mappings[{index}].relation is invalid", path
             )
