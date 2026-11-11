@@ -28,6 +28,7 @@ from dsl_primitives import (
     matches,
     read_regular_bytes,
     read_regular_utf8,
+    resolve_nonsymlink_under_root,
     safe_relative,
     str_choice,
     strict_json_loads,
@@ -61,12 +62,12 @@ def validate_manifest(
     manifest_path: Path, root: Path
 ) -> tuple[Report, ValidatedManifest | None]:
     report = Report()
-    try:
-        resolved_manifest = manifest_path.resolve(strict=False)
-        resolved_manifest.relative_to(root.resolve())
-    except (OSError, RuntimeError, ValueError):
+    resolved_manifest = resolve_nonsymlink_under_root(manifest_path, root)
+    if resolved_manifest is None:
         report.error(
-            "DSL-PATH-001", "manifest is outside the repository root", manifest_path
+            "DSL-PATH-001",
+            "manifest is outside the repository root or traverses a symlink",
+            manifest_path,
         )
         return report, None
     try:
@@ -146,21 +147,13 @@ def validate_manifest(
     )
     for index, raw in enumerate(owned_paths):
         safe_relative(raw, f"ownedPaths[{index}]", report, manifest_path)
-    try:
-        manifest_relative = (
-            manifest_path.resolve().relative_to(root.resolve()).as_posix()
-        )
-    except ValueError:
+    manifest_relative = resolved_manifest.relative_to(root.resolve()).as_posix()
+    if not matches(manifest_relative, owned_paths):
         report.error(
-            "DSL-PATH-001", "manifest is outside the repository root", manifest_path
+            "DSL-OWNER-001",
+            "ownedPaths must include the manifest itself",
+            manifest_path,
         )
-    else:
-        if not matches(manifest_relative, owned_paths):
-            report.error(
-                "DSL-OWNER-001",
-                "ownedPaths must include the manifest itself",
-                manifest_path,
-            )
     artifacts = validate_artifacts(
         manifest.get("artifacts"),
         root,
@@ -238,30 +231,41 @@ def load_targets(
     targets: list[str], root: Path
 ) -> tuple[Report, list[ValidatedManifest]]:
     report = Report()
-    paths: list[Path] = []
+    discovered: list[Path] = []
     for raw in targets:
         target = Path(raw)
         if not target.is_absolute():
             target = root / target
-        if target.is_symlink():
-            try:
-                target.resolve(strict=False).relative_to(root.resolve())
-            except (OSError, RuntimeError, ValueError):
-                report.error(
-                    "DSL-PATH-001", "manifest is outside the repository root", target
-                )
-                continue
-        if target.is_dir():
-            paths.extend(discover_manifests(target))
-        elif target.is_file():
-            paths.append(target)
+        checked = resolve_nonsymlink_under_root(target, root)
+        if checked is None:
+            report.error(
+                "DSL-PATH-001",
+                "manifest is outside the repository root or traverses a symlink",
+                target,
+            )
+            continue
+        if checked.is_dir():
+            discovered.extend(discover_manifests(checked))
+        elif checked.is_file():
+            discovered.append(checked)
         else:
             report.error("DSL-MANIFEST-001", "manifest target does not exist", raw)
+    verified_paths: set[Path] = set()
+    for item in discovered:
+        checked_item = resolve_nonsymlink_under_root(item, root)
+        if checked_item is None:
+            report.error(
+                "DSL-PATH-001",
+                "manifest is outside the repository root or traverses a symlink",
+                item,
+            )
+        else:
+            verified_paths.add(checked_item)
+    paths = sorted(verified_paths)
     if not paths:
         if not report.failed:
             report.error("DSL-MANIFEST-001", f"no {MANIFEST_NAME} files found", root)
         return report, []
-    paths = sorted({item.resolve() for item in paths})
     manifests: list[ValidatedManifest] = []
     ids: dict[str, Path] = {}
     for path in paths:
@@ -341,14 +345,12 @@ def is_dsl_sensitive(root: Path, path: str, manifests: list[ValidatedManifest]) 
         return True
     if lower_parts & {"dsl", "schemas", "grammar", "grammars", "profiles", "spec"}:
         return True
-    file_path = root / path
+    safe_target = resolve_nonsymlink_under_root(root / path, root)
+    if safe_target is None:
+        return False
     try:
-        if file_path.is_symlink():
-            return False
-        resolved = file_path.resolve(strict=False)
-        resolved.relative_to(root.resolve())
         content = read_regular_bytes(
-            file_path, max_bytes=2 * 1024 * 1024, follow_symlinks=False
+            safe_target, max_bytes=2 * 1024 * 1024, follow_symlinks=False
         )
         return b"```dsl" in content
     except (OSError, RuntimeError, ValueError):

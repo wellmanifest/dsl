@@ -24,17 +24,18 @@ MANIFEST_SCHEMA = "wellmanifest.dsl/manifest/v1"
 FINDINGS_SCHEMA = "wellmanifest.dsl/findings/v1"
 SEMVER = re.compile(
     r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
-    r"(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$"
+    r"(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?\Z"
 )
-STABLE_ID = re.compile(r"^[a-z0-9][a-z0-9._-]*[a-z0-9]$")
-DIGEST = re.compile(r"^sha256:([a-f0-9]{64})$")
-REVISION = re.compile(r"^[a-f0-9]{40}$")
-DOMAIN = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
-PREFIX = re.compile(r"^[a-z][a-z0-9._-]*$")
-MEDIA_TYPE = re.compile(r"^[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+$")
-COMMAND_NAME = re.compile(r"^[A-Z][A-Z0-9_]*$")
-FINDING_CODE = re.compile(r"^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$")
-PRODUCER_ID = re.compile(r"^[a-z0-9][a-z0-9._-]*[a-z0-9]$")
+STABLE_ID = re.compile(r"^[a-z0-9][a-z0-9._-]*[a-z0-9]\Z")
+DIGEST = re.compile(r"^sha256:([a-f0-9]{64})\Z")
+REVISION = re.compile(r"^[a-f0-9]{40}\Z")
+DOMAIN = re.compile(r"^[a-z0-9][a-z0-9._-]*\Z")
+PREFIX = re.compile(r"^[a-z][a-z0-9._-]*\Z")
+MEDIA_TYPE = re.compile(r"^[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+\Z")
+COMMAND_NAME = re.compile(r"^[A-Z][A-Z0-9_]*\Z")
+FINDING_CODE = re.compile(r"^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\Z")
+PRODUCER_ID = re.compile(r"^[a-z0-9][a-z0-9._-]*[a-z0-9]\Z")
+URI_SCHEME = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*\Z")
 
 HELP_PAGE_SECTIONS = {
     "command": ("Purpose", "Syntax", "Inputs", "Outputs", "Errors", "Examples"),
@@ -119,18 +120,27 @@ def _enforce_json_depth(root_value: Any, max_depth: int = MAX_JSON_DEPTH) -> Non
         if depth > max_depth:
             raise ValueError(f"JSON nesting exceeds maximum depth of {max_depth}")
         if isinstance(current, dict):
-            for child in current.values():
+            for key, child in current.items():
+                if not isinstance(key, str):
+                    raise TypeError("JSON object keys must be strings")
+                if isinstance(child, float) and not math.isfinite(child):
+                    raise ValueError("non-finite float in JSON structure")
                 if isinstance(child, (dict, list)):
                     stack.append((child, depth + 1))
         elif isinstance(current, list):
             for child in current:
+                if isinstance(child, float) and not math.isfinite(child):
+                    raise ValueError("non-finite float in JSON structure")
                 if isinstance(child, (dict, list)):
                     stack.append((child, depth + 1))
+        elif isinstance(current, float) and not math.isfinite(current):
+            raise ValueError("non-finite float in JSON structure")
 
 
-def read_regular_bytes(
-    path: Path, *, max_bytes: int = MAX_JSON_BYTES, follow_symlinks: bool = False
-) -> bytes:
+def _open_regular_fd(path: Path, *, follow_symlinks: bool = False) -> tuple[int, int]:
+    link_meta = None if follow_symlinks else os.lstat(path)
+    if link_meta is not None and stat.S_ISLNK(link_meta.st_mode):
+        raise OSError(f"refusing to open symlink: {path}")
     flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0)
     if not follow_symlinks:
         flags |= getattr(os, "O_NOFOLLOW", 0)
@@ -139,7 +149,22 @@ def read_regular_bytes(
         metadata = os.fstat(fd)
         if not stat.S_ISREG(metadata.st_mode):
             raise OSError(f"not a regular file: {path}")
-        if metadata.st_size > max_bytes:
+        if link_meta is not None and (
+            metadata.st_dev != link_meta.st_dev or metadata.st_ino != link_meta.st_ino
+        ):
+            raise OSError(f"inode changed during open: {path}")
+    except BaseException:
+        os.close(fd)
+        raise
+    return fd, metadata.st_size
+
+
+def read_regular_bytes(
+    path: Path, *, max_bytes: int = MAX_JSON_BYTES, follow_symlinks: bool = False
+) -> bytes:
+    fd, st_size = _open_regular_fd(path, follow_symlinks=follow_symlinks)
+    try:
+        if st_size > max_bytes:
             raise ValueError(
                 f"file exceeds maximum allowed size ({max_bytes} bytes): {path}"
             )
@@ -276,7 +301,7 @@ def safe_relative(
             "DSL-PATH-001", f"{label} must be a non-empty relative path", manifest_path
         )
         return None
-    if any(ord(ch) < 32 for ch in raw):
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in raw):
         report.error(
             "DSL-PATH-001",
             f"{label} must not contain control characters",
@@ -290,13 +315,41 @@ def safe_relative(
             manifest_path,
         )
         return None
+    segments = raw.split("/")
     candidate = PurePosixPath(raw)
-    if candidate.is_absolute() or ".." in candidate.parts or raw in {".", ".."}:
+    if candidate.is_absolute() or ".." in segments or "." in segments or "" in segments:
         report.error(
             "DSL-PATH-001", f"{label} escapes the repository: {raw}", manifest_path
         )
         return None
     return raw
+
+
+def resolve_nonsymlink_under_root(path: Path, root: Path) -> Path | None:
+    try:
+        if os.path.lexists(path) and stat.S_ISLNK(os.lstat(path).st_mode):
+            return None
+        root_resolved = root.resolve()
+        candidate = path if path.is_absolute() else root / path
+        try:
+            rel = candidate.relative_to(root)
+        except ValueError:
+            rel = candidate.relative_to(root_resolved)
+        if ".." in rel.parts:
+            return None
+        current = root_resolved
+        for part in rel.parts:
+            current = current / part
+            try:
+                st = os.lstat(current)
+            except FileNotFoundError:
+                break
+            if stat.S_ISLNK(st.st_mode):
+                return None
+        current.resolve(strict=False).relative_to(root_resolved)
+    except (OSError, RuntimeError, ValueError):
+        return None
+    return current
 
 
 def resolve_repository_path(
@@ -305,20 +358,11 @@ def resolve_repository_path(
     safe = safe_relative(raw, label, report, manifest_path)
     if safe is None:
         return None
-    root_resolved = root.resolve()
-    try:
-        target = (root_resolved / safe).resolve(strict=False)
-    except (OSError, RuntimeError) as error:
-        report.error(
-            "DSL-PATH-001", f"{label} cannot be resolved safely: {error}", manifest_path
-        )
-        return None
-    try:
-        target.relative_to(root_resolved)
-    except ValueError:
+    target = resolve_nonsymlink_under_root(root / safe, root)
+    if target is None:
         report.error(
             "DSL-PATH-001",
-            f"{label} resolves outside the repository: {raw}",
+            f"{label} resolves outside the repository or traverses a symlink: {raw}",
             manifest_path,
         )
         return None
@@ -330,13 +374,9 @@ def matches(path: str, patterns: Iterable[str]) -> bool:
 
 
 def sha256(path: Path) -> str:
-    flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
-    fd = os.open(path, flags)
+    fd, st_size = _open_regular_fd(path, follow_symlinks=False)
     try:
-        metadata = os.fstat(fd)
-        if not stat.S_ISREG(metadata.st_mode):
-            raise OSError(f"not a regular file: {path}")
-        if metadata.st_size > MAX_HASH_BYTES:
+        if st_size > MAX_HASH_BYTES:
             raise OSError(
                 f"file exceeds maximum hash size ({MAX_HASH_BYTES} bytes): {path}"
             )
@@ -358,10 +398,19 @@ def sha256(path: Path) -> str:
 
 
 def uri_is_valid(value: Any) -> bool:
-    if not is_string(value) or any(ch.isspace() or ord(ch) < 32 for ch in value):
+    if not is_string(value) or any(
+        ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in value
+    ):
         return False
     parsed = urlparse(value)
-    return bool(parsed.scheme) and bool(parsed.netloc or parsed.path)
+    if URI_SCHEME.fullmatch(parsed.scheme) is None:
+        return False
+    has_authority_prefix = value[len(parsed.scheme) : len(parsed.scheme) + 3] == "://"
+    scheme_lower = parsed.scheme.lower()
+    no_dotdot = ".." not in re.split(r"[/:]", parsed.path)
+    if has_authority_prefix or scheme_lower in {"http", "https", "schema"}:
+        return bool(parsed.netloc) and no_dotdot
+    return bool(parsed.netloc or parsed.path) and no_dotdot
 
 
 def help_page_text(name: str, kind: str) -> str:

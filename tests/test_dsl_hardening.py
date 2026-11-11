@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -15,6 +16,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 import dsl_check
+import dsl_primitives
 
 
 class DslHardeningTest(unittest.TestCase):
@@ -168,6 +170,123 @@ class DslHardeningTest(unittest.TestCase):
             self.assertTrue(report.has_code("DSL-MANIFEST-001"))
             with self.assertRaises(OSError):
                 dsl_check.sha256(fifo_path)
+
+    def test_in_repo_symlink_manifest_artifact_help_and_findings_rejected(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="dsl-inrepo-symlink-") as tmp:
+            root = Path(tmp)
+            source = root / "CONTRIBUTING.md"
+            source.write_text(
+                "```dsl\nDOCUMENT EXAMPLE\nVERSION 1\n```\n", encoding="utf-8"
+            )
+            doc_digests = dsl_check.write_example_help_pages(root)
+            doc = dsl_check.valid_example_document(
+                dsl_check.sha256(source), doc_digests
+            )
+            manifest_path = root / dsl_check.MANIFEST_NAME
+            manifest_path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+
+            inrepo_manifest_link = root / "alias-manifest.json"
+            inrepo_manifest_link.symlink_to(manifest_path)
+            rep_direct, val_direct = dsl_check.validate_manifest(
+                inrepo_manifest_link, root
+            )
+            self.assertIsNone(val_direct)
+            self.assertTrue(rep_direct.has_code("DSL-PATH-001"))
+
+            nested_pkg = root / "packages" / "linked"
+            nested_pkg.mkdir(parents=True)
+            (nested_pkg / dsl_check.MANIFEST_NAME).symlink_to(manifest_path)
+            rep_discover, _ = dsl_check.load_targets(["."], root)
+            self.assertTrue(rep_discover.has_code("DSL-PATH-001"))
+            (nested_pkg / dsl_check.MANIFEST_NAME).unlink()
+
+            cmd_page = root / "docs" / "DOCUMENT.md"
+            backup = root / "docs" / "DOCUMENT.orig"
+            cmd_page.rename(backup)
+            cmd_page.symlink_to("VERSION.md")
+            rep_help, _ = dsl_check.validate_manifest(manifest_path, root)
+            self.assertTrue(rep_help.has_code("DSL-PATH-001"))
+            cmd_page.unlink()
+            backup.rename(cmd_page)
+
+            _, valid_manifest = dsl_check.validate_manifest(manifest_path, root)
+            self.assertIsNotNone(valid_manifest)
+            assert valid_manifest is not None
+
+            real_reports = root / "real_reports"
+            real_reports.mkdir()
+            findings_file = real_reports / "findings.json"
+            findings_file.write_text("{}\n", encoding="utf-8")
+            linked_reports = root / "reports_link"
+            linked_reports.symlink_to(real_reports)
+            rep_findings, binding = dsl_check.validate_findings_report(
+                linked_reports / "findings.json",
+                root,
+                {dsl_check.MANIFEST_NAME: valid_manifest},
+                "a" * 40,
+            )
+            self.assertIsNone(binding)
+            self.assertTrue(rep_findings.has_code("DSL-FINDINGS-001"))
+
+    def test_safe_relative_uri_regex_anchors_and_inode_swap_guards(self) -> None:
+        report = dsl_check.Report()
+        for bad_rel in (
+            "./CONTRIBUTING.md",
+            "docs//DOCUMENT.md",
+            "docs/./DOCUMENT.md",
+            "docs/",
+            "docs/DOCUMENT\x7f.md",
+        ):
+            self.assertIsNone(
+                dsl_check.safe_relative(
+                    bad_rel, "path", report, Path("dsl-manifest.json")
+                )
+            )
+
+        for bad_uri in (
+            "http:///missing-host",
+            "schema:///missing-host",
+            "https://example.test/../escape",
+            "urn:example:../escape",
+            "https://example.test/del\x7f",
+        ):
+            self.assertFalse(dsl_check.uri_is_valid(bad_uri), bad_uri)
+        self.assertTrue(dsl_check.uri_is_valid("urn:ietf:rfc:3986"))
+        self.assertIsNone(dsl_check.REVISION.match("a" * 40 + "\n"))
+        self.assertIsNone(dsl_check.SEMVER.match("1.0.0\n"))
+
+        with self.assertRaises(TypeError):
+            dsl_primitives._enforce_json_depth({1: "bad"})
+        with self.assertRaises(ValueError):
+            dsl_primitives._enforce_json_depth({"x": float("inf")})
+
+        with tempfile.TemporaryDirectory(prefix="dsl-inode-") as tmp:
+            sample = Path(tmp) / "sample.txt"
+            sample.write_text("ok\n", encoding="utf-8")
+            real_fstat = os.fstat
+
+            def swapped_fstat(fd: int) -> os.stat_result:
+                st = real_fstat(fd)
+                return os.stat_result(
+                    (
+                        st.st_mode,
+                        st.st_ino + 1,
+                        st.st_dev,
+                        st.st_nlink,
+                        st.st_uid,
+                        st.st_gid,
+                        st.st_size,
+                        st.st_atime,
+                        st.st_mtime,
+                        st.st_ctime,
+                    )
+                )
+
+            with (
+                mock.patch("dsl_primitives.os.fstat", side_effect=swapped_fstat),
+                self.assertRaises(OSError),
+            ):
+                dsl_primitives.read_regular_bytes(sample)
 
 
 if __name__ == "__main__":

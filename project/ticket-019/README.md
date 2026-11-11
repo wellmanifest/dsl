@@ -2,8 +2,8 @@
 
 - **ID**: ticket-019
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Status**: DONE
+- **Workflow state**: MERGED
 - **Created**: 2026-09-19
 
 ## Intent

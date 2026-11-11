@@ -2,8 +2,8 @@
 
 - **ID**: ticket-020
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Status**: DONE
+- **Workflow state**: MERGED
 - **Created**: 2026-10-17
 
 ## Goal and scope
