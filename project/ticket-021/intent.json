@@ -1,0 +1,103 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-021",
+  "summary": "Modularize dsl_check under 500 lines and harden JSON, symlink, and Git gates",
+  "workstream": "integration",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-021/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "profiles/dsl-manifest.json",
+    "src/**",
+    "tests/**"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "a16b81f38667d2920cb49e1285e36d972583e94e",
+    "targetBranch": "main",
+    "outcome": "Modularize dsl_check into <500-line modules under src/, harden duplicate JSON keys, symlink escapes, control-char paths, URI whitespace, and Git revision arguments, update profiles/dsl-manifest.json digests, and add unittest/pytest discovery to tests/profile_contract_test.py.",
+    "nonGoals": [
+      "No breaking CLI flag or schema changes"
+    ],
+    "complexity": "M",
+    "estimatedMinutes": 30,
+    "budgets": {
+      "maxImplementationFiles": 9,
+      "maxAffectedComponents": 3,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Split src/dsl_check.py into dsl_primitives, dsl_sections, dsl_policy, dsl_manifest, dsl_findings, dsl_selftest, and dsl_check CLI/re-export facade while keeping all modules strictly under 500 lines.",
+      "components": [
+        {
+          "name": "dsl-check",
+          "paths": [
+            "src/**"
+          ]
+        },
+        {
+          "name": "dsl-profiles-manifest",
+          "paths": [
+            "profiles/dsl-manifest.json"
+          ]
+        },
+        {
+          "name": "profile-contract-tests",
+          "paths": [
+            "tests/profile_contract_test.py"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert modularization under src/, tests/profile_contract_test.py, and profiles/dsl-manifest.json."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "python3 src/dsl_check.py self-test",
+          "ruff check --no-cache src/*.py tests/profile_contract_test.py"
+        ],
+        "evidence": "All modules under src/ and tests/ are strictly <500 lines and pass ruff and self-test."
+      },
+      {
+        "criterion": "AC-02",
+        "commands": [
+          "python3 src/dsl_check.py self-test"
+        ],
+        "evidence": "Self-test verifies duplicate JSON key, control-char path, symlink escape, URI whitespace, and Git option-injection rejections."
+      },
+      {
+        "criterion": "AC-03",
+        "commands": [
+          "python3 src/dsl_check.py validate profiles/dsl-manifest.json",
+          "python3 src/dsl_check.py standards profiles/dsl-manifest.json",
+          "pytest -q tests/profile_contract_test.py",
+          "./project/governance-check.sh --base origin/main"
+        ],
+        "evidence": "Manifest validation, standards lock, pytest, Docker, and governance checks pass with 0 findings."
+      }
+    ]
+  }
+}
