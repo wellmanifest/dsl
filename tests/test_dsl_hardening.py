@@ -288,6 +288,99 @@ class DslHardeningTest(unittest.TestCase):
             ):
                 dsl_primitives.read_regular_bytes(sample)
 
+    def test_json_int_overflow_surrogates_and_is_string_guards(self) -> None:
+        for bad_json in (
+            '{"x": ' + "9" * 500 + "}",
+            '{"x": -' + "9" * 500 + "}",
+            '{"x": ' + "9" * 5000 + "}",
+            r'{"x": "\ud800"}',
+            r'{"\udfff": 1}',
+            '{"x": "\ud800"}',
+        ):
+            with self.subTest(payload=bad_json[:24]), self.assertRaises(ValueError):
+                dsl_check.strict_json_loads(bad_json)
+
+        for bad_obj in (
+            {"x": 10**400},
+            {"x": -(10**400)},
+            {"x": "\ud800"},
+            {"\ud800": "v"},
+            ["\udfff"],
+            "\ud800",
+        ):
+            with self.assertRaises(ValueError):
+                dsl_primitives._enforce_json_depth(bad_obj)
+
+        self.assertFalse(dsl_check.is_string("\ud800"))
+        self.assertTrue(dsl_check.is_string("valid-utf8"))
+
+    def test_ancestor_symlinks_max_bytes_bounds_and_uri_segments(self) -> None:
+        for bad_uri in (
+            "https://[::1",
+            "https://./escape",
+            "https://../escape",
+            "https://example.test/./dot",
+            "urn:example:",
+            "urn:example::v1",
+            "urn:example:.:v1",
+            "https://example.test/\ud800",
+        ):
+            self.assertFalse(dsl_check.uri_is_valid(bad_uri), bad_uri)
+
+        for pattern, valid_sample in (
+            (dsl_check.STABLE_ID, "example.id"),
+            (dsl_check.DIGEST, "sha256:" + "a" * 64),
+            (dsl_check.REVISION, "a" * 40),
+            (dsl_primitives.URI_SCHEME, "https"),
+        ):
+            self.assertIsNotNone(pattern.fullmatch(valid_sample))
+            self.assertIsNone(pattern.match("\n" + valid_sample))
+            self.assertIsNone(pattern.match(valid_sample + "\n"))
+
+        with tempfile.TemporaryDirectory(prefix="dsl-anc-sym-") as tmp:
+            base = Path(tmp)
+            real_dir = base / "real" / "nested"
+            real_dir.mkdir(parents=True)
+            sample = real_dir / "payload.json"
+            sample.write_bytes(b"x" * 200)
+
+            for bad_limit in (0, -5, True, False):
+                with self.assertRaises(ValueError):
+                    dsl_primitives.read_regular_bytes(sample, max_bytes=bad_limit)  # type: ignore[arg-type]
+
+            sym_dir = base / "sym_dir"
+            sym_dir.symlink_to(base / "real")
+            deep_sym = sym_dir / "nested" / "payload.json"
+            with self.assertRaises(OSError):
+                dsl_primitives.read_regular_bytes(deep_sym)
+            with self.assertRaises(OSError):
+                dsl_check.sha256(deep_sym)
+
+            prev_cwd = Path.cwd()
+            try:
+                os.chdir(base)
+                with self.assertRaises(OSError):
+                    dsl_primitives.read_regular_bytes(
+                        Path("sym_dir/nested/payload.json")
+                    )
+            finally:
+                os.chdir(prev_cwd)
+
+            read_sizes: list[int] = []
+            real_read = os.read
+
+            def spy_read(fd: int, length: int) -> bytes:
+                read_sizes.append(length)
+                return real_read(fd, length)
+
+            small = real_dir / "small.txt"
+            small.write_bytes(b"hello")
+            with mock.patch("dsl_primitives.os.read", side_effect=spy_read):
+                self.assertEqual(
+                    dsl_primitives.read_regular_bytes(small, max_bytes=32), b"hello"
+                )
+            self.assertTrue(all(size <= 33 for size in read_sizes))
+
 
 if __name__ == "__main__":
     unittest.main()

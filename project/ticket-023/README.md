@@ -1,9 +1,9 @@
 # Ticket 023: Harden in-repository symlink traversal, regular-file inode stability, and URI scheme bounds
 
 - **ID**: ticket-023
-- **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Owner**: tom
+- **Status**: DONE
+- **Workflow state**: PUBLICATION
 - **Created**: 2026-11-11
 
 ## Goal and scope

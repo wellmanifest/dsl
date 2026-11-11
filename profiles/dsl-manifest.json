@@ -129,7 +129,7 @@
     {
       "path": "src/dsl_primitives.py",
       "role": "parser-contract",
-      "digest": "sha256:42db2cef53c162b44a798fc47dc85c17c255f06dcbd04bb9e4e65a62641ec694"
+      "digest": "sha256:57bd9cea49de53a66663bf45332c99babb9be5321a19ba5b2f3d62a3d56e22a0"
     },
     {
       "path": "src/dsl_sections.py",
@@ -144,7 +144,7 @@
     {
       "path": "tests/test_dsl_hardening.py",
       "role": "parser-contract",
-      "digest": "sha256:e36f473beb88e02f90d9f5da783435040f05fc071c2f15332631b357ec8c04ad"
+      "digest": "sha256:10200ca5022f8ecc9e166d01c3d38651c76f2bfcc75a8b0c54559b4ec468e453"
     }
   ],
   "namespaces": [
