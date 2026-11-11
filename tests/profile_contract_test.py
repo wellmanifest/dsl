@@ -3,7 +3,8 @@
 
 from __future__ import annotations
 
-import json
+import sys
+import unittest
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -12,6 +13,13 @@ from typing import Any
 from jsonschema import Draft202012Validator, FormatChecker
 
 ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = str(ROOT / "src")
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
+
+import dsl_check
+from dsl_primitives import strict_json_loads
+
 SCHEMA_PATH = ROOT / "profiles" / "wellmanifest-profiles.schema.json"
 VALID_FIXTURES = ROOT / "examples" / "profiles" / "valid" / "execution-recovery.json"
 INVALID_FIXTURES = (
@@ -20,7 +28,7 @@ INVALID_FIXTURES = (
 
 
 def load(path: Path) -> Any:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return strict_json_loads(path.read_text(encoding="utf-8"))
 
 
 def by_schema(documents: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
@@ -134,12 +142,8 @@ def semantic_findings(documents: list[dict[str, Any]]) -> set[str]:
     remote_observations = grouped.get(remote_observation_schema, [])
     remote_decisions = grouped.get(remote_decision_schema, [])
     for observation in remote_observations:
-        observed_at = datetime.fromisoformat(
-            observation["observed_at"].replace("Z", "+00:00")
-        )
-        valid_until = datetime.fromisoformat(
-            observation["valid_until"].replace("Z", "+00:00")
-        )
+        observed_at = datetime.fromisoformat(observation["observed_at"])
+        valid_until = datetime.fromisoformat(observation["valid_until"])
         if valid_until <= observed_at:
             findings.add("PROFILE-REMOTE-STALE")
     for observation, decision in zip(remote_observations, remote_decisions):
@@ -201,6 +205,18 @@ def main() -> int:
         f"{len(valid_documents)} valid documents, {len(invalid_cases)} invalid cases"
     )
     return 0
+
+
+class DslContractTests(unittest.TestCase):
+    def test_profile_contracts(self) -> None:
+        self.assertEqual(main(), 0)
+
+    def test_dsl_check_selftest(self) -> None:
+        self.assertEqual(dsl_check.self_test(), 0)
+
+    def test_duplicate_json_keys_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            strict_json_loads('{"a": 1, "a": 2}')
 
 
 if __name__ == "__main__":
