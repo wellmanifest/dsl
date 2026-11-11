@@ -17,7 +17,9 @@ from dsl_primitives import (
     SEMVER,
     STABLE_ID,
     Report,
+    _has_symlink_ancestor,
     check_object,
+    is_single_line_string,
     is_string,
     read_regular_utf8,
     resolve_nonsymlink_under_root,
@@ -241,8 +243,10 @@ def validate_findings_report(
     inside_root = candidate.is_relative_to(root) or candidate.is_relative_to(
         root_resolved
     )
-    if report_path.is_symlink() or (
-        inside_root and resolve_nonsymlink_under_root(candidate, root) is None
+    if (
+        report_path.is_symlink()
+        or _has_symlink_ancestor(report_path)
+        or (inside_root and resolve_nonsymlink_under_root(candidate, root) is None)
     ):
         report.error(
             "DSL-FINDINGS-001",
@@ -286,7 +290,7 @@ def validate_findings_report(
                 "producer.version must use Semantic Versioning",
                 report_path,
             )
-        if not is_string(producer.get("adapter")):
+        if not is_single_line_string(producer.get("adapter")):
             report.error(
                 "DSL-FINDINGS-001", "producer.adapter must be non-empty", report_path
             )

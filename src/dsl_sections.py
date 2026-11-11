@@ -13,7 +13,7 @@ from dsl_primitives import (
     Report,
     check_object,
     check_string_list,
-    is_string,
+    is_single_line_string,
     matches,
     resolve_repository_path,
     safe_relative,
@@ -45,7 +45,7 @@ def validate_owners(value: Any, report: Report, path: Path) -> None:
             item.get("kind"), {"repository", "organization", "team", "person"}
         ):
             report.error("DSL-MANIFEST-001", f"owners[{index}].kind is invalid", path)
-        if not is_string(item.get("id")):
+        if not is_single_line_string(item.get("id")):
             report.error(
                 "DSL-MANIFEST-001", f"owners[{index}].id must be non-empty", path
             )
@@ -67,7 +67,7 @@ def validate_source(
     source = check_object(value, required, allowed, "source", report, path)
     if source is None:
         return None
-    if not is_string(source.get("repository")):
+    if not is_single_line_string(source.get("repository")):
         report.error("DSL-MANIFEST-001", "source.repository must be non-empty", path)
     source_path = source.get("path")
     if safe_relative(source_path, "source.path", report, path):
@@ -87,7 +87,9 @@ def validate_source(
             "source.revision must be a 40-character lowercase Git SHA",
             path,
         )
-    if "declaredVersion" in source and not is_string(source.get("declaredVersion")):
+    if "declaredVersion" in source and not is_single_line_string(
+        source.get("declaredVersion")
+    ):
         report.error(
             "DSL-MANIFEST-001", "source.declaredVersion must be non-empty", path
         )
@@ -100,7 +102,7 @@ def validate_source(
     if not isinstance(media_type, str) or MEDIA_TYPE.fullmatch(media_type) is None:
         report.error("DSL-MANIFEST-001", "source.mediaType is invalid", path)
     selectors = check_string_list(
-        source.get("selectors"), "source.selectors", report, path
+        source.get("selectors"), "source.selectors", report, path, single_line=True
     )
     if source.get("canonical") == "markdown-embedded" and not selectors:
         report.error(
@@ -263,7 +265,9 @@ def validate_projections(value: Any, report: Report, path: Path) -> None:
         )
         if item is None:
             continue
-        if not is_string(item.get("name")) or not is_string(item.get("mediaType")):
+        if not is_single_line_string(item.get("name")) or not is_single_line_string(
+            item.get("mediaType")
+        ):
             report.error(
                 "DSL-MANIFEST-001",
                 f"projections[{index}] names and media types must be non-empty",
@@ -324,7 +328,7 @@ def validate_semantics(value: Any, report: Report, path: Path) -> None:
     ):
         report.error("DSL-MANIFEST-001", "semantics.unknownPolicy is invalid", path)
     authority = item.get("authoritySchema")
-    if effect == "controlled-effects" and not is_string(authority):
+    if effect == "controlled-effects" and not is_single_line_string(authority):
         report.error(
             "DSL-AUTH-001", "controlled-effects requires authoritySchema", path
         )
@@ -355,10 +359,14 @@ def validate_llm(value: Any, report: Report, path: Path) -> None:
         report.error("DSL-LLM-001", "llm.mode is invalid", path)
         mode = "invalid"
     requests = check_string_list(
-        item.get("requestSchemas"), "llm.requestSchemas", report, path
+        item.get("requestSchemas"), "llm.requestSchemas", report, path, single_line=True
     )
     responses = check_string_list(
-        item.get("responseSchemas"), "llm.responseSchemas", report, path
+        item.get("responseSchemas"),
+        "llm.responseSchemas",
+        report,
+        path,
+        single_line=True,
     )
     if mode in {"input", "bidirectional"} and not requests:
         report.error("DSL-LLM-001", f"llm.mode={mode} requires requestSchemas", path)
@@ -374,7 +382,7 @@ def validate_llm(value: Any, report: Report, path: Path) -> None:
     if not str_choice(natural, {"forbidden", "typed-source-only"}):
         report.error("DSL-LLM-001", "llm.naturalLanguage is invalid", path)
     source_schema = item.get("sourceSchema")
-    if natural == "typed-source-only" and not is_string(source_schema):
+    if natural == "typed-source-only" and not is_single_line_string(source_schema):
         report.error("DSL-LLM-001", "typed-source-only requires sourceSchema", path)
     if natural == "forbidden" and source_schema is not None:
         report.error(
@@ -430,7 +438,12 @@ def validate_conformance(value: Any, root: Path, report: Report, path: Path) -> 
         allowed={"manifest", "contract", "runtime", "llm-boundary"},
     )
     check_string_list(
-        item.get("commands"), "conformance.commands", report, path, nonempty=True
+        item.get("commands"),
+        "conformance.commands",
+        report,
+        path,
+        nonempty=True,
+        single_line=True,
     )
     for field in ("validExamples", "invalidExamples"):
         examples = check_string_list(
@@ -457,7 +470,9 @@ def validate_mappings(value: Any, report: Report, path: Path) -> None:
         )
         if item is None:
             continue
-        if not is_string(item.get("standard")) or not is_string(item.get("version")):
+        if not is_single_line_string(item.get("standard")) or not is_single_line_string(
+            item.get("version")
+        ):
             report.error(
                 "DSL-MANIFEST-001",
                 f"mappings[{index}] names and versions must be non-empty",

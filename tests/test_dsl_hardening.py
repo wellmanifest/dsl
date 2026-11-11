@@ -16,6 +16,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 import dsl_check
+import dsl_io
 import dsl_primitives
 
 
@@ -283,7 +284,7 @@ class DslHardeningTest(unittest.TestCase):
                 )
 
             with (
-                mock.patch("dsl_primitives.os.fstat", side_effect=swapped_fstat),
+                mock.patch.object(dsl_io.os, "fstat", side_effect=swapped_fstat),
                 self.assertRaises(OSError),
             ):
                 dsl_primitives.read_regular_bytes(sample)
@@ -357,14 +358,27 @@ class DslHardeningTest(unittest.TestCase):
                 dsl_check.sha256(deep_sym)
 
             prev_cwd = Path.cwd()
+            sibling = base / "sibling"
+            sibling.mkdir()
             try:
                 os.chdir(base)
+                for rel_sym in (
+                    Path("sym_dir/nested/payload.json"),
+                    Path("sym_dir/../real/nested/payload.json"),
+                ):
+                    with self.assertRaises(OSError):
+                        dsl_primitives.read_regular_bytes(rel_sym)
+                os.chdir(sibling)
                 with self.assertRaises(OSError):
                     dsl_primitives.read_regular_bytes(
-                        Path("sym_dir/nested/payload.json")
+                        Path("../sym_dir/nested/payload.json")
                     )
             finally:
                 os.chdir(prev_cwd)
+
+            unnorm_abs = Path(f"{base}/sym_dir/../real/nested/payload.json")
+            with self.assertRaises(OSError):
+                dsl_primitives.read_regular_bytes(unnorm_abs)
 
             read_sizes: list[int] = []
             real_read = os.read
@@ -375,11 +389,51 @@ class DslHardeningTest(unittest.TestCase):
 
             small = real_dir / "small.txt"
             small.write_bytes(b"hello")
-            with mock.patch("dsl_primitives.os.read", side_effect=spy_read):
+            with mock.patch.object(dsl_io.os, "read", side_effect=spy_read):
                 self.assertEqual(
                     dsl_primitives.read_regular_bytes(small, max_bytes=32), b"hello"
                 )
             self.assertTrue(all(size <= 33 for size in read_sizes))
+
+    def test_control_chars_single_line_fields_int_digits_and_module_budget(
+        self,
+    ) -> None:
+        for bad_int in ('{"x": ' + "9" * 401 + "}", '{"x": -' + "1" + "0" * 400 + "}"):
+            with self.assertRaises(ValueError):
+                dsl_check.strict_json_loads(bad_int)
+        self.assertEqual(dsl_io._parse_bounded_int("9" * 400), 10**400 - 1)
+        for ctrl in ("\x00", "\x1b", "\r", "\x7f"):
+            self.assertFalse(dsl_check.is_string(f"bad{ctrl}text"))
+        self.assertTrue(dsl_check.is_string("multi\nline\ttext"))
+        for single_bad in ("line1\nline2", "col1\tcol2", "   ", "bad\x7f"):
+            self.assertFalse(dsl_primitives.is_single_line_string(single_bad))
+
+        with tempfile.TemporaryDirectory(prefix="dsl-ctrl-") as tmp:
+            root = Path(tmp)
+            source = root / "CONTRIBUTING.md"
+            source.write_text(
+                "```dsl\nDOCUMENT EXAMPLE\nVERSION 1\n```\n", encoding="utf-8"
+            )
+            digests = dsl_check.write_example_help_pages(root)
+            doc = dsl_check.valid_example_document(dsl_check.sha256(source), digests)
+            doc["owners"][0]["id"] = "owner\ninjected"
+            doc["source"]["repository"] = "https://example.test/repo\nextra"
+            doc["source"]["declaredVersion"] = "1\t2"
+            doc["conformance"]["commands"] = ["python3 check.py\necho bad"]
+            doc["mappings"] = [
+                {"standard": "std\nbad", "version": "1.0.0\x7f", "relation": "maps-to"}
+            ]
+            manifest_path = root / dsl_check.MANIFEST_NAME
+            manifest_path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+            rep, _ = dsl_check.validate_manifest(manifest_path, root)
+            self.assertGreaterEqual(
+                sum(item.code == "DSL-MANIFEST-001" for item in rep.findings), 5
+            )
+
+        for folder in (SRC, ROOT / "tests"):
+            for py_file in sorted(folder.glob("*.py")):
+                lines = len(py_file.read_text(encoding="utf-8").splitlines())
+                self.assertLess(lines, 500, f"{py_file} has {lines} lines")
 
 
 if __name__ == "__main__":
