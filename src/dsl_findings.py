@@ -20,6 +20,7 @@ from dsl_primitives import (
     check_object,
     is_string,
     read_regular_utf8,
+    resolve_nonsymlink_under_root,
     resolve_repository_path,
     safe_relative,
     sha256,
@@ -235,10 +236,17 @@ def validate_findings_report(
     expected_revision: str,
 ) -> tuple[Report, FindingsBinding | None]:
     report = Report()
-    if report_path.is_symlink():
+    root_resolved = root.resolve()
+    candidate = report_path if report_path.is_absolute() else root / report_path
+    inside_root = candidate.is_relative_to(root) or candidate.is_relative_to(
+        root_resolved
+    )
+    if report_path.is_symlink() or (
+        inside_root and resolve_nonsymlink_under_root(candidate, root) is None
+    ):
         report.error(
             "DSL-FINDINGS-001",
-            "findings report must not be a symlink",
+            "findings report must not be or traverse a symlink",
             report_path,
         )
         return report, None
