@@ -1,0 +1,112 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-022",
+  "summary": "Harden dsl_check finite JSON, depth, regular-file bounds, and unhashable enum guards",
+  "workstream": "integration",
+  "classification": {
+    "kind": "BUG",
+    "priority": "P1",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-022/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "profiles/dsl-manifest.json",
+    "src/dsl_findings.py",
+    "src/dsl_manifest.py",
+    "src/dsl_policy.py",
+    "src/dsl_primitives.py",
+    "src/dsl_sections.py",
+    "tests/test_dsl_hardening.py"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "3a59c1c4780512383d2fe0107332e8223b41267b",
+    "targetBranch": "main",
+    "outcome": "Harden dsl_check against non-finite JSON, >64 nesting depth, FIFO/symlink/oversized file reads, non-string dict keys, non-dict resolution/source crashes, and unhashable enum values across manifest and findings validators while keeping all src/*.py modules strictly under 500 lines and binding tests/test_dsl_hardening.py in profiles/dsl-manifest.json.",
+    "nonGoals": [
+      "No breaking CLI flag or schema changes"
+    ],
+    "complexity": "M",
+    "estimatedMinutes": 25,
+    "budgets": {
+      "maxImplementationFiles": 9,
+      "maxAffectedComponents": 3,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Centralize read_regular_bytes, read_regular_utf8, finite/depth-bounded strict_json_loads, str_choice, string_set, and parameterized check_object in dsl_primitives.py and adopt them across dsl_manifest, dsl_sections, dsl_policy, and dsl_findings.",
+      "components": [
+        {
+          "name": "dsl-check",
+          "paths": [
+            "src/dsl_findings.py",
+            "src/dsl_manifest.py",
+            "src/dsl_policy.py",
+            "src/dsl_primitives.py",
+            "src/dsl_sections.py"
+          ]
+        },
+        {
+          "name": "dsl-profiles-manifest",
+          "paths": [
+            "profiles/dsl-manifest.json"
+          ]
+        },
+        {
+          "name": "dsl-hardening-tests",
+          "paths": [
+            "tests/test_dsl_hardening.py"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert this bounded hardening commit via protected PR delivery."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "python3 src/dsl_check.py self-test",
+          "pytest -q tests/test_dsl_hardening.py tests/profile_contract_test.py"
+        ],
+        "evidence": "project/ticket-022/README.md"
+      },
+      {
+        "criterion": "AC-02",
+        "commands": [
+          "ruff format --check src/*.py tests/*.py",
+          "ruff check --no-cache src/*.py tests/*.py"
+        ],
+        "evidence": "project/ticket-022/README.md"
+      },
+      {
+        "criterion": "AC-03",
+        "commands": [
+          "python3 src/dsl_check.py validate profiles/dsl-manifest.json",
+          "python3 src/dsl_check.py standards profiles/dsl-manifest.json",
+          "./project/governance-check.sh --base origin/main",
+          "wellman check"
+        ],
+        "evidence": "project/ticket-022/README.md"
+      }
+    ]
+  }
+}

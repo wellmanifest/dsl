@@ -17,11 +17,15 @@ from dsl_primitives import (
     SEMVER,
     STABLE_ID,
     Report,
+    check_object,
     is_string,
+    read_regular_utf8,
     resolve_repository_path,
     safe_relative,
     sha256,
+    str_choice,
     strict_json_loads,
+    string_set,
 )
 
 
@@ -41,22 +45,9 @@ def findings_object(
     report: Report,
     path: Path,
 ) -> dict[str, Any] | None:
-    if not isinstance(value, dict):
-        report.error("DSL-FINDINGS-001", f"{label} must be an object", path)
-        return None
-    missing = sorted(required - set(value))
-    unknown = sorted(set(value) - required)
-    if missing:
-        report.error(
-            "DSL-FINDINGS-001", f"{label} misses fields: {', '.join(missing)}", path
-        )
-    if unknown:
-        report.error(
-            "DSL-FINDINGS-001",
-            f"{label} has unknown fields: {', '.join(unknown)}",
-            path,
-        )
-    return value
+    return check_object(
+        value, required, required, label, report, path, code="DSL-FINDINGS-001"
+    )
 
 
 def validate_evidence_reference(
@@ -70,7 +61,7 @@ def validate_evidence_reference(
     item = findings_object(value, fields, f"evidence[{index}]", report, report_path)
     if item is None:
         return
-    if item.get("kind") not in {"artifact", "receipt", "log", "attestation"}:
+    if not str_choice(item.get("kind"), {"artifact", "receipt", "log", "attestation"}):
         report.error(
             "DSL-FINDINGS-001", f"evidence[{index}].kind is invalid", report_path
         )
@@ -91,14 +82,22 @@ def validate_evidence_reference(
         report.error(
             "DSL-FINDINGS-001", f"evidence path does not exist: {raw_path}", raw_path
         )
-    elif (
-        isinstance(digest, str)
-        and DIGEST.fullmatch(digest)
-        and sha256(resolved) != digest
-    ):
-        report.error(
-            "DSL-FINDINGS-001", f"evidence digest is stale: {raw_path}", raw_path
-        )
+    elif isinstance(digest, str) and DIGEST.fullmatch(digest):
+        try:
+            observed_digest = sha256(resolved)
+        except OSError as error:
+            report.error(
+                "DSL-FINDINGS-001",
+                f"evidence path cannot be read: {raw_path}: {error}",
+                raw_path,
+            )
+        else:
+            if observed_digest != digest:
+                report.error(
+                    "DSL-FINDINGS-001",
+                    f"evidence digest is stale: {raw_path}",
+                    raw_path,
+                )
 
 
 def validate_normalized_finding(
@@ -135,7 +134,7 @@ def validate_normalized_finding(
         )
         code = "INVALID-CODE"
     severity = item.get("severity")
-    if severity not in {"info", "warning", "error", "critical"}:
+    if not str_choice(severity, {"info", "warning", "error", "critical"}):
         report.error(
             "DSL-FINDINGS-001", f"findings[{index}].severity is invalid", report_path
         )
@@ -161,7 +160,8 @@ def validate_normalized_finding(
             expected_help,
         )
     catalog_name = "criticalCodes" if critical else "errorCodes"
-    if code not in manifest.documentation.get(catalog_name, []):
+    catalog_entries = string_set(manifest.documentation.get(catalog_name, []))
+    if code not in catalog_entries:
         report.error(
             "DSL-FINDINGS-001",
             f"finding code is absent from documentation.{catalog_name}; add {expected_help}",
@@ -185,7 +185,7 @@ def validate_normalized_finding(
         status = resolution.get("status")
         summary = resolution.get("summary")
         resolved_revision = resolution.get("resolvedAtRevision")
-        if status not in {"open", "resolved"}:
+        if not str_choice(status, {"open", "resolved"}):
             report.error(
                 "DSL-FINDINGS-001",
                 f"findings[{index}].resolution.status is invalid",
@@ -243,7 +243,9 @@ def validate_findings_report(
         )
         return report, None
     try:
-        document = strict_json_loads(report_path.read_text(encoding="utf-8"))
+        document = strict_json_loads(
+            read_regular_utf8(report_path, follow_symlinks=False)
+        )
     except (OSError, UnicodeDecodeError, ValueError) as error:
         report.error(
             "DSL-FINDINGS-001", f"cannot load findings report: {error}", report_path
@@ -312,7 +314,10 @@ def validate_findings_report(
                 report_path,
             )
         if manifest is not None:
-            repository = manifest.document.get("source", {}).get("repository")
+            source_obj = manifest.document.get("source")
+            repository = (
+                source_obj.get("repository") if isinstance(source_obj, dict) else None
+            )
             if subject.get("repository") != repository:
                 report.error(
                     "DSL-FINDINGS-003",
@@ -402,8 +407,8 @@ def gate_findings(
     for manifest in manifests:
         manifest_path = manifest.path.resolve().relative_to(root.resolve()).as_posix()
         policy = manifest.finding_policy
-        required = set(policy.get("requiredProducers", []))
-        security_producers = set(policy.get("securityProducers", []))
+        required = string_set(policy.get("requiredProducers", []))
+        security_producers = string_set(policy.get("securityProducers", []))
         for producer in sorted(required):
             binding = bindings.get((manifest_path, producer))
             if binding is None:
@@ -419,23 +424,27 @@ def gate_findings(
                     f"required {qualifier}producer is unevaluable: {producer}",
                     binding.path,
                 )
-        blocking = set(policy.get("blockingSeverities", []))
+        blocking = string_set(policy.get("blockingSeverities", []))
         for (bound_manifest, _producer), binding in bindings.items():
             if bound_manifest != manifest_path or not binding.evaluable:
                 continue
             for finding in binding.findings:
-                resolution = finding.get("resolution", {})
-                unresolved = resolution.get("status") != "resolved"
+                resolution = finding.get("resolution")
+                unresolved = (
+                    not isinstance(resolution, dict)
+                    or resolution.get("status") != "resolved"
+                )
                 security_block = (
                     policy.get("blockUnresolvedSecurity") is True
                     and finding.get("security") is True
                 )
-                severity_block = finding.get("severity") in blocking
+                severity_block = str_choice(finding.get("severity"), blocking)
                 if unresolved and (security_block or severity_block):
+                    help_ref = finding.get("helpPath")
                     report.error(
                         "DSL-CRITICAL-001",
                         f"unresolved blocking finding {finding.get('id')}: {finding.get('message')}",
-                        finding.get("helpPath", manifest_path),
+                        help_ref if isinstance(help_ref, str) else manifest_path,
                     )
     return report
 
@@ -447,7 +456,12 @@ def git_revision(root: Path) -> str | None:
             cwd=root,
             stderr=subprocess.DEVNULL,
             text=True,
+            timeout=15,
         ).strip()
-    except (FileNotFoundError, subprocess.CalledProcessError):
+    except (
+        FileNotFoundError,
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+    ):
         return None
     return value if REVISION.fullmatch(value) else None

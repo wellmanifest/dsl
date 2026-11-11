@@ -5,12 +5,19 @@ from __future__ import annotations
 import fnmatch
 import hashlib
 import json
+import math
+import os
 import re
+import stat
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import urlparse
+
+MAX_JSON_BYTES = 4 * 1024 * 1024
+MAX_JSON_DEPTH = 64
+MAX_HASH_BYTES = 64 * 1024 * 1024
 
 MANIFEST_NAME = "dsl-manifest.json"
 MANIFEST_SCHEMA = "wellmanifest.dsl/manifest/v1"
@@ -94,20 +101,114 @@ def _reject_duplicate_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def _reject_nonfinite_constant(token: str) -> Any:
+    raise ValueError(f"non-finite JSON constant is forbidden: {token}")
+
+
+def _parse_finite_float(token: str) -> float:
+    parsed = float(token)
+    if not math.isfinite(parsed):
+        raise ValueError(f"JSON number overflows finite float range: {token}")
+    return parsed
+
+
+def _enforce_json_depth(root_value: Any, max_depth: int = MAX_JSON_DEPTH) -> None:
+    stack: list[tuple[Any, int]] = [(root_value, 0)]
+    while stack:
+        current, depth = stack.pop()
+        if depth > max_depth:
+            raise ValueError(f"JSON nesting exceeds maximum depth of {max_depth}")
+        if isinstance(current, dict):
+            for child in current.values():
+                if isinstance(child, (dict, list)):
+                    stack.append((child, depth + 1))
+        elif isinstance(current, list):
+            for child in current:
+                if isinstance(child, (dict, list)):
+                    stack.append((child, depth + 1))
+
+
+def read_regular_bytes(
+    path: Path, *, max_bytes: int = MAX_JSON_BYTES, follow_symlinks: bool = False
+) -> bytes:
+    flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0)
+    if not follow_symlinks:
+        flags |= getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags)
+    try:
+        metadata = os.fstat(fd)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise OSError(f"not a regular file: {path}")
+        if metadata.st_size > max_bytes:
+            raise ValueError(
+                f"file exceeds maximum allowed size ({max_bytes} bytes): {path}"
+            )
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            chunk = os.read(fd, 65536)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > max_bytes:
+                raise ValueError(
+                    f"file exceeds maximum allowed size ({max_bytes} bytes): {path}"
+                )
+            chunks.append(chunk)
+        return b"".join(chunks)
+    finally:
+        os.close(fd)
+
+
+def read_regular_utf8(
+    path: Path, *, max_bytes: int = MAX_JSON_BYTES, follow_symlinks: bool = False
+) -> str:
+    return read_regular_bytes(
+        path, max_bytes=max_bytes, follow_symlinks=follow_symlinks
+    ).decode("utf-8")
+
+
 def strict_json_loads(raw: str) -> Any:
-    return json.loads(raw, object_pairs_hook=_reject_duplicate_pairs)
+    if not isinstance(raw, str):
+        raise TypeError("JSON input must be a string")
+    if len(raw.encode("utf-8")) > MAX_JSON_BYTES:
+        raise ValueError(f"JSON input exceeds {MAX_JSON_BYTES} bytes")
+    try:
+        parsed = json.loads(
+            raw,
+            object_pairs_hook=_reject_duplicate_pairs,
+            parse_constant=_reject_nonfinite_constant,
+            parse_float=_parse_finite_float,
+        )
+    except RecursionError as error:
+        raise ValueError("JSON nesting exceeds maximum depth") from error
+    _enforce_json_depth(parsed, MAX_JSON_DEPTH)
+    return parsed
 
 
 def is_string(value: Any) -> bool:
     return isinstance(value, str) and bool(value)
 
 
+def str_choice(value: Any, allowed: set[str] | frozenset[str]) -> bool:
+    return isinstance(value, str) and value in allowed
+
+
+def string_set(value: Any) -> set[str]:
+    return (
+        {item for item in value if isinstance(item, str)}
+        if isinstance(value, list)
+        else set()
+    )
+
+
 def unique(values: list[Any]) -> bool:
     try:
         encoded = [
-            json.dumps(value, sort_keys=True, separators=(",", ":")) for value in values
+            json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
+            for value in values
         ]
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, RecursionError, OverflowError):
         return False
     return len(encoded) == len(set(encoded))
 
@@ -119,22 +220,22 @@ def check_object(
     label: str,
     report: Report,
     path: Path,
+    *,
+    code: str = "DSL-MANIFEST-001",
 ) -> dict[str, Any] | None:
     if not isinstance(value, dict):
-        report.error("DSL-MANIFEST-001", f"{label} must be an object", path)
+        report.error(code, f"{label} must be an object", path)
         return None
-    missing = sorted(required - set(value))
-    unknown = sorted(set(value) - allowed)
+    str_keys = {key for key in value if isinstance(key, str)}
+    if len(str_keys) != len(value):
+        report.error(code, f"{label} keys must all be strings", path)
+        return None
+    missing = sorted(required - str_keys)
+    unknown = sorted(str_keys - allowed)
     if missing:
-        report.error(
-            "DSL-MANIFEST-001", f"{label} misses fields: {', '.join(missing)}", path
-        )
+        report.error(code, f"{label} misses fields: {', '.join(missing)}", path)
     if unknown:
-        report.error(
-            "DSL-MANIFEST-001",
-            f"{label} has unknown fields: {', '.join(unknown)}",
-            path,
-        )
+        report.error(code, f"{label} has unknown fields: {', '.join(unknown)}", path)
     return value
 
 
@@ -229,11 +330,31 @@ def matches(path: str, patterns: Iterable[str]) -> bool:
 
 
 def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+    flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags)
+    try:
+        metadata = os.fstat(fd)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise OSError(f"not a regular file: {path}")
+        if metadata.st_size > MAX_HASH_BYTES:
+            raise OSError(
+                f"file exceeds maximum hash size ({MAX_HASH_BYTES} bytes): {path}"
+            )
+        digest = hashlib.sha256()
+        total = 0
+        while True:
+            chunk = os.read(fd, 1024 * 1024)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_HASH_BYTES:
+                raise OSError(
+                    f"file exceeds maximum hash size ({MAX_HASH_BYTES} bytes): {path}"
+                )
             digest.update(chunk)
-    return f"sha256:{digest.hexdigest()}"
+        return f"sha256:{digest.hexdigest()}"
+    finally:
+        os.close(fd)
 
 
 def uri_is_valid(value: Any) -> bool:

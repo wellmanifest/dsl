@@ -26,7 +26,10 @@ from dsl_primitives import (
     check_string_list,
     is_string,
     matches,
+    read_regular_bytes,
+    read_regular_utf8,
     safe_relative,
+    str_choice,
     strict_json_loads,
     uri_is_valid,
 )
@@ -67,7 +70,7 @@ def validate_manifest(
         )
         return report, None
     try:
-        document = strict_json_loads(resolved_manifest.read_text(encoding="utf-8"))
+        document = strict_json_loads(read_regular_utf8(resolved_manifest))
     except (OSError, UnicodeDecodeError, ValueError) as error:
         report.error(
             "DSL-MANIFEST-001", f"cannot load manifest: {error}", manifest_path
@@ -130,7 +133,7 @@ def validate_manifest(
             "DSL-COMPAT-001", "version must use Semantic Versioning", manifest_path
         )
     status = manifest.get("status")
-    if status not in {"experimental", "stable", "deprecated"}:
+    if not str_choice(status, {"experimental", "stable", "deprecated"}):
         report.error("DSL-MANIFEST-001", "status is invalid", manifest_path)
     domain = manifest.get("domain")
     if not isinstance(domain, str) or DOMAIN.fullmatch(domain) is None:
@@ -276,7 +279,7 @@ def load_targets(
 
 
 def _run_git_command(command: list[str], root: Path) -> bytes:
-    return subprocess.check_output(command, cwd=root)
+    return subprocess.check_output(command, cwd=root, timeout=30)
 
 
 def _valid_git_revision_arg(value: Any) -> bool:
@@ -309,7 +312,11 @@ def git_paths(
     for command in commands:
         try:
             output = _run_git_command(command, root)
-        except (FileNotFoundError, subprocess.CalledProcessError) as error:
+        except (
+            FileNotFoundError,
+            subprocess.CalledProcessError,
+            subprocess.TimeoutExpired,
+        ) as error:
             report.error(
                 "DSL-GIT-001", f"cannot determine changed files: {error}", root
             )
@@ -340,8 +347,10 @@ def is_dsl_sensitive(root: Path, path: str, manifests: list[ValidatedManifest]) 
             return False
         resolved = file_path.resolve(strict=False)
         resolved.relative_to(root.resolve())
-        if resolved.is_file() and resolved.stat().st_size <= 2 * 1024 * 1024:
-            return b"```dsl" in resolved.read_bytes()
+        content = read_regular_bytes(
+            file_path, max_bytes=2 * 1024 * 1024, follow_symlinks=False
+        )
+        return b"```dsl" in content
     except (OSError, RuntimeError, ValueError):
         pass
     return False
