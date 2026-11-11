@@ -103,12 +103,12 @@
     {
       "path": "tests/profile_contract_test.py",
       "role": "parser-contract",
-      "digest": "sha256:378110ebb6c51a3d92a384fca1425b0617ac50449abc7179ba3457fbf3b469a2"
+      "digest": "sha256:277cfed2bf81a66ea5cd2542f112981f71c8f9931bb79afa56634705419ad294"
     },
     {
       "path": "src/dsl_check.py",
       "role": "parser-contract",
-      "digest": "sha256:22626277d35eee9d8823380599825c055b13e1374c9e5215ecbbfa6e44351c53"
+      "digest": "sha256:1373bc670dce7e16615e3015f1a29c95b030ac75504fb4caa73ca8451d626c30"
     },
     {
       "path": "src/dsl_findings.py",

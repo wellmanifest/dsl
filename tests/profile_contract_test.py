@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import importlib
 import sys
 import unittest
 from collections import defaultdict
@@ -16,9 +17,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = str(ROOT / "src")
 if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
-
-import dsl_check
-from dsl_primitives import strict_json_loads
+dsl_check = importlib.import_module("dsl_check")
+strict_json_loads = importlib.import_module("dsl_primitives").strict_json_loads
 
 SCHEMA_PATH = ROOT / "profiles" / "wellmanifest-profiles.schema.json"
 VALID_FIXTURES = ROOT / "examples" / "profiles" / "valid" / "execution-recovery.json"
