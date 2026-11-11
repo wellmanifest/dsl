@@ -108,7 +108,7 @@
     {
       "path": "src/dsl_check.py",
       "role": "parser-contract",
-      "digest": "sha256:1373bc670dce7e16615e3015f1a29c95b030ac75504fb4caa73ca8451d626c30"
+      "digest": "sha256:ac6acc79393f1a3e7da856add18940ebb593a6bbaa238a46f4581f41258b4cb6"
     },
     {
       "path": "src/dsl_findings.py",
