@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 import sys
@@ -434,6 +436,63 @@ class DslHardeningTest(unittest.TestCase):
             for py_file in sorted(folder.glob("*.py")):
                 lines = len(py_file.read_text(encoding="utf-8").splitlines())
                 self.assertLess(lines, 500, f"{py_file} has {lines} lines")
+
+
+class ArtifactDigestPlanTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        self.source = self.root / "CONTRIBUTING.md"
+        self.source.write_text(
+            "```dsl\nDOCUMENT EXAMPLE\nVERSION 1\n```\n", encoding="utf-8"
+        )
+        self.old_digest = dsl_check.sha256(self.source)
+        self.manifest = self.root / "dsl-manifest.json"
+        document = dsl_check.valid_example_document(
+            self.old_digest, dsl_check.write_example_help_pages(self.root)
+        )
+        self.manifest.write_text(json.dumps(document), encoding="utf-8")
+
+    def run_command(self, *args: str) -> tuple[int, dict]:
+        parsed = dsl_check.parser().parse_args([*args, "--root", str(self.root)])
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            code = parsed.handler(parsed)
+        return code, json.loads(stdout.getvalue())
+
+    def test_stale_digest_produces_only_a_guarded_digest_replacement(self) -> None:
+        code, plan = self.run_command("plan-digests", str(self.manifest))
+        self.assertEqual((code, plan["patch"]), (0, []))
+        original = self.manifest.read_bytes()
+        self.source.write_text(
+            "```dsl\nDOCUMENT EXAMPLE\nVERSION 2\n```\n", encoding="utf-8"
+        )
+        code, plan = self.run_command("plan-digests", "dsl-manifest.json")
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            (plan["readOnly"], plan["manifest"]), (True, "dsl-manifest.json")
+        )
+        path, observed = "/artifacts/0/digest", dsl_check.sha256(self.source)
+        self.assertEqual(
+            plan["patch"],
+            [
+                {"op": "test", "path": "/artifacts/0/path", "value": "CONTRIBUTING.md"},
+                {"op": "test", "path": path, "value": self.old_digest},
+                {"op": "replace", "path": path, "value": observed},
+            ],
+        )
+        self.assertEqual(self.manifest.read_bytes(), original)
+        code, report = self.run_command(
+            "validate", "dsl-manifest.json", "--format", "json"
+        )
+        self.assertEqual(code, 1)
+        self.assertIn("DSL-HASH-001", {item["code"] for item in report["findings"]})
+
+    def test_unavailable_artifact_refuses_a_plan(self) -> None:
+        self.source.unlink()
+        code, report = self.run_command("plan-digests", "dsl-manifest.json")
+        self.assertEqual(code, 1)
+        self.assertNotIn("patch", report)
+        self.assertIn("DSL-PATH-002", {item["code"] for item in report["findings"]})
 
 
 if __name__ == "__main__":

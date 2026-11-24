@@ -1,0 +1,89 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-027",
+  "summary": "Plan DSL artifact digest refresh",
+  "workstream": "integration",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-027/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "src/dsl_check.py",
+    "src/dsl_manifest.py",
+    "src/dsl_sections.py",
+    "tests/test_dsl_hardening.py",
+    "profiles/dsl-manifest.json"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "a304de5c265809ba2b3f075c2738281875c7061b",
+    "targetBranch": "main",
+    "outcome": "Produce a read-only, guarded digest-only patch for one DSL manifest and prove it reproduces both MaskFleet #424 digest replacements.",
+    "nonGoals": [
+      "Automatic execution or scope approval",
+      "Changes to existing validation results or repository contracts"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 25,
+    "budgets": {
+      "maxImplementationFiles": 5,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 1,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Collect digest replacements in the existing validator. Emit a guarded patch only when stale digests are the only validation errors.",
+      "components": [
+        {
+          "name": "dsl-validator",
+          "paths": [
+            "src/dsl_check.py",
+            "src/dsl_manifest.py",
+            "src/dsl_sections.py",
+            "profiles/dsl-manifest.json"
+          ]
+        },
+        {
+          "name": "validator-tests",
+          "paths": [
+            "tests/test_dsl_hardening.py"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [
+        "Add the plan-digests CLI subcommand and its JSON output."
+      ],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the CLI, capture path, regression tests and their matching manifest digests together."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "python -m unittest discover -s tests -p 'test_*.py'",
+          "python src/dsl_check.py self-test",
+          "python src/dsl_check.py standards profiles/dsl-manifest.json"
+        ],
+        "evidence": "Local test run, exact projection, and MaskFleet #424 canary."
+      }
+    ]
+  }
+}

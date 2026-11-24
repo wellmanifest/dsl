@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from dsl_findings import (
@@ -65,6 +66,7 @@ from dsl_primitives import (
     write_example_help_pages,
 )
 from dsl_sections import (
+    ArtifactDigestChanges,
     validate_artifacts,
     validate_conformance,
     validate_lifecycle,
@@ -222,6 +224,43 @@ def command_standards(args: argparse.Namespace) -> int:
     return 1 if report.failed else 0
 
 
+def command_plan_digests(args: argparse.Namespace) -> int:
+    root = Path(args.root).resolve()
+    path = root / args.manifest
+    changes: ArtifactDigestChanges = {}
+    report, manifest = validate_manifest(path, root, digest_changes=changes)
+    blockers = Report()
+    blockers.findings.extend(
+        item for item in report.findings if item.code != "DSL-HASH-001"
+    )
+    if manifest is None or blockers.failed:
+        print(report.render("json"))
+        return 1
+
+    patch = []
+    for index, (artifact_path, declared, observed) in changes.items():
+        entry = f"/artifacts/{index}"
+        patch.extend(
+            [
+                {"op": "test", "path": f"{entry}/path", "value": artifact_path},
+                {"op": "test", "path": f"{entry}/digest", "value": declared},
+                {"op": "replace", "path": f"{entry}/digest", "value": observed},
+            ]
+        )
+    print(
+        json.dumps(
+            {
+                "schema": "wellmanifest.dsl/artifact-digest-plan/v1",
+                "manifest": path.relative_to(root).as_posix(),
+                "readOnly": True,
+                "patch": patch,
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     subparsers = result.add_subparsers(dest="command", required=True)
@@ -237,6 +276,14 @@ def parser() -> argparse.ArgumentParser:
     validate.add_argument("--root", default=".", help="repository root")
     validate.add_argument("--format", choices=["text", "json"], default="text")
     validate.set_defaults(handler=command_validate)
+
+    plan_digests = subparsers.add_parser(
+        "plan-digests",
+        help="emit a guarded JSON Patch for stale digests without editing files",
+    )
+    plan_digests.add_argument("manifest", help="path to one existing DSL manifest")
+    plan_digests.add_argument("--root", default=".", help="repository root")
+    plan_digests.set_defaults(handler=command_plan_digests)
 
     changes = subparsers.add_parser(
         "changes", help="validate manifests and ownership of changed DSL files"
