@@ -23,6 +23,8 @@ from dsl_primitives import (
     uri_is_valid,
 )
 
+ArtifactDigestChanges = dict[int, tuple[str, str, str]]
+
 
 def validate_owners(value: Any, report: Report, path: Path) -> None:
     if not isinstance(value, list) or not value:
@@ -118,6 +120,8 @@ def validate_artifacts(
     source_path: str | None,
     report: Report,
     manifest_path: Path,
+    *,
+    digest_changes: ArtifactDigestChanges | None = None,
 ) -> dict[str, dict[str, Any]]:
     if not isinstance(value, list) or not value:
         report.error(
@@ -202,6 +206,8 @@ def validate_artifacts(
                 )
             else:
                 if observed_digest != digest:
+                    if digest_changes is not None:
+                        digest_changes[index] = (artifact_path, digest, observed_digest)
                     report.error(
                         "DSL-HASH-001",
                         f"artifact digest is stale: {artifact_path}",

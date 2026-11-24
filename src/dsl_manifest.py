@@ -35,6 +35,7 @@ from dsl_primitives import (
     uri_is_valid,
 )
 from dsl_sections import (
+    ArtifactDigestChanges,
     validate_artifacts,
     validate_conformance,
     validate_lifecycle,
@@ -59,7 +60,10 @@ class ValidatedManifest:
 
 
 def validate_manifest(
-    manifest_path: Path, root: Path
+    manifest_path: Path,
+    root: Path,
+    *,
+    digest_changes: ArtifactDigestChanges | None = None,
 ) -> tuple[Report, ValidatedManifest | None]:
     report = Report()
     resolved_manifest = resolve_nonsymlink_under_root(manifest_path, root)
@@ -161,6 +165,7 @@ def validate_manifest(
         source.get("path") if source else None,
         report,
         manifest_path,
+        digest_changes=digest_changes,
     )
     validate_namespaces(manifest.get("namespaces"), report, manifest_path)
     validate_projections(manifest.get("projections"), report, manifest_path)
